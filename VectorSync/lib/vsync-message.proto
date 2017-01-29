@@ -1,0 +1,28 @@
+/* -*- Mode:protobuf; indent-tabs-mode:nil; -*- */
+
+syntax = "proto3";
+
+package ndn.vsync.proto;
+
+// Version Vector
+message VV {
+  repeated uint64 entry = 1;
+}
+
+// View Info
+message ViewInfo {
+  message Entry {
+    string id = 1;
+    string prefix = 2;
+  }
+
+  repeated Entry entry = 1;
+}
+
+// Vsync data content
+message Content {
+  uint64 view_num = 1;
+  string leader_id = 2;
+  VV vv = 3;
+  string user_data = 4;
+}
