@@ -79,7 +79,7 @@ bool Node::LoadView(const ViewID& vid, const ViewInfo& vinfo) {
     return false;
   }
 
-  NS_LOG_LOGIC("Load view: vid=" << ToString(vid) << ",vinfo=" << vinfo);
+  NS_LOG_LOGIC("Load view: vid=" << vid << ", vinfo=" << vinfo);
 
   idx_ = p.first;
   view_id_ = vid;
@@ -103,7 +103,7 @@ void Node::DoViewChange(const ViewID& vid) {
     if (data_store_.find(n) != data_store_.end()) return;
 
     Interest i(n, time::seconds(4));
-    NS_LOG_LOGIC("Send: i.name=" << n.toUri());
+    NS_LOG_LOGIC("Send: i.name=" << n);
     face_.expressInterest(i, std::bind(&Node::ProcessViewInfo, this, _1, _2),
                           [](const Interest&, const lp::Nack&) {},
                           [](const Interest&) {});
@@ -112,9 +112,9 @@ void Node::DoViewChange(const ViewID& vid) {
 
 void Node::ProcessViewInfo(const Interest& vinterest, const Data& vinfo) {
   const auto& n = vinfo.getName();
-  NS_LOG_LOGIC("Recv: d.name=" << n.toUri());
+  NS_LOG_LOGIC("Recv: d.name=" << n);
   if (n.size() != vinterest.getName().size()) {
-    NS_LOG_WARN("Invalid view info name " << n.toUri());
+    NS_LOG_WARN("Invalid view info name " << n);
     return;
   }
 
@@ -150,8 +150,8 @@ void Node::ProcessViewInfo(const Interest& vinterest, const Data& vinfo) {
       return;
 
     ++view_id_.first;
-    NS_LOG_INFO("Move to new view: vid=" << ToString(view_id_)
-                                         << ",vinfo=" << view_info_);
+    NS_LOG_INFO("Move to new view: vid=" << view_id_
+                                         << ", vinfo=" << view_info_);
     ResetState();
     PublishViewInfo();
     PublishHeartbeat();
@@ -160,7 +160,7 @@ void Node::ProcessViewInfo(const Interest& vinterest, const Data& vinfo) {
 
 void Node::PublishViewInfo() {
   auto n = MakeViewInfoName(view_id_);
-  NS_LOG_LOGIC("Publish: d.name=" << n.toUri() << ",vinfo=" << view_info_);
+  NS_LOG_LOGIC("Publish: d.name=" << n << ", vinfo=" << view_info_);
   std::string content;
   view_info_.Encode(content);
   std::shared_ptr<Data> d = std::make_shared<Data>(n);
@@ -200,8 +200,8 @@ VersionVector Node::PublishData(const std::string& content, uint32_t type) {
   queue.insert({vv, data});
   // PrintCausalityGraph();
 
-  NS_LOG_LOGIC("Publish: d.name=" << n.toUri() << ", vid=" << ToString(view_id_)
-                                  << ", vv=" << ToString(vv));
+  NS_LOG_LOGIC("Publish: d.name=" << n << ", vid=" << view_id_
+                                  << ", vv=" << vv);
 
   SendSyncInterest();
 
@@ -212,7 +212,7 @@ void Node::SendDataInterest(const Name& prefix, const NodeID& nid,
                             uint64_t seq) {
   auto in = MakeDataName(prefix, nid, seq);
   Interest inst(in, time::milliseconds(1000));
-  NS_LOG_LOGIC("Send: i.name=" << in.toUri());
+  NS_LOG_LOGIC("Send: i.name=" << in);
   face_.expressInterest(inst, std::bind(&Node::OnRemoteData, this, _2),
                         [](const Interest&, const lp::Nack&) {},
                         [](const Interest&) {});
@@ -221,13 +221,13 @@ void Node::SendDataInterest(const Name& prefix, const NodeID& nid,
 
 void Node::OnDataInterest(const Interest& interest) {
   const auto& n = interest.getName();
-  NS_LOG_LOGIC("Recv: i.name=" << n.toUri());
+  NS_LOG_LOGIC("Recv: i.name=" << n);
   auto iter = data_store_.find(n);
   if (iter == data_store_.end()) {
-    NS_LOG_WARN("Unknown data name: " << n.toUri());
+    NS_LOG_WARN("Unknown data name: " << n);
     // TODO: send L7 nack based on the sequence number in the Interest name
   } else {
-    NS_LOG_LOGIC("Send: d.name=" << iter->second->getName().toUri());
+    NS_LOG_LOGIC("Send: d.name=" << iter->second->getName());
     face_.put(*iter->second);
   }
 }
@@ -242,7 +242,7 @@ void Node::SendSyncInterest() {
 
   PublishVector(n, digest);
 
-  NS_LOG_LOGIC("Send: i.name=" << n.toUri());
+  NS_LOG_LOGIC("Send: i.name=" << n);
   Interest i(n, time::milliseconds(1000));
   face_.expressInterest(i, [](const Interest&, const Data&) {},
                         [](const Interest&, const lp::Nack&) {},
@@ -263,11 +263,11 @@ void Node::SendSyncReply(const Name& n) {
 
 void Node::OnSyncInterest(const Interest& interest) {
   const auto& n = interest.getName();
-  NS_LOG_LOGIC("Recv: i.name=" << n.toUri());
+  NS_LOG_LOGIC("Recv: i.name=" << n);
 
   // Check sync interest name size
   if (n.size() != kSyncPrefix.size() + 4) {
-    NS_LOG_WARN("Invalid sync interest name: " << n.toUri());
+    NS_LOG_WARN("Invalid sync interest name: " << n);
     return;
   }
 
@@ -278,7 +278,7 @@ void Node::OnSyncInterest(const Interest& interest) {
   if (dispatcher == "vinfo") {
     auto iter = data_store_.find(n);
     if (iter != data_store_.end()) {
-      NS_LOG_LOGIC("Send: d.name=" << iter->second->getName().toUri());
+      NS_LOG_LOGIC("Send: d.name=" << iter->second->getName());
       face_.put(*iter->second);
     }
   } else if (dispatcher == "digest") {
@@ -296,7 +296,7 @@ void Node::OnSyncInterest(const Interest& interest) {
   } else if (dispatcher == "vector") {
     auto iter = data_store_.find(n);
     if (iter != data_store_.end()) {
-      NS_LOG_LOGIC("Send: d.name=" << iter->second->getName().toUri());
+      NS_LOG_LOGIC("Send: d.name=" << iter->second->getName());
       face_.put(*iter->second);
     }
   } else {
@@ -309,7 +309,7 @@ void Node::SendVectorInterest(const Name& sync_interest_name) {
   // Ignore sync interest if the vector data has been fetched before
   if (data_store_.find(n) != data_store_.end()) return;
 
-  NS_LOG_LOGIC("Send: i.name=" << n.toUri());
+  NS_LOG_LOGIC("Send: i.name=" << n);
   Interest i(n, time::milliseconds(1000));
   face_.expressInterest(i, std::bind(&Node::ProcessVector, this, _2),
                         [](const Interest&, const lp::Nack&) {},
@@ -319,8 +319,7 @@ void Node::SendVectorInterest(const Name& sync_interest_name) {
 void Node::PublishVector(const Name& sync_interest_name,
                          const std::string& digest) {
   auto n = MakeVectorInterestName(sync_interest_name);
-  NS_LOG_LOGIC("Publish: d.name=" << n.toUri() << ",vector_clock="
-                                  << ToString(vector_clock_));
+  NS_LOG_LOGIC("Publish: d.name=" << n << ", vector_clock=" << vector_clock_);
 
   std::shared_ptr<Data> data = std::make_shared<Data>(n);
   data->setFreshnessPeriod(time::seconds(3600));
@@ -346,7 +345,7 @@ void Node::ProcessVector(const Data& data) {
 
   auto vi = ExtractViewID(n);
   if (vi != view_id_) {
-    NS_LOG_INFO("Ignore version vector from different view: " << ToString(vi));
+    NS_LOG_INFO("Ignore version vector from different view: " << vi);
     return;
   }
 
@@ -360,19 +359,18 @@ void Node::ProcessVector(const Data& data) {
     return;
   }
 
-  NS_LOG_LOGIC("Recv: vector_clock=" << ToString(vv));
+  NS_LOG_LOGIC("Recv: vector_clock=" << vv);
 
   if (vv[idx_] > vector_clock_[idx_]) {
-    NS_LOG_INFO("Ignore version vector with larger self sequence number:"
-                << ToString(vv));
+    NS_LOG_INFO("Ignore vector clock with larger self sequence number: " << vv);
   }
 
   // Process version vector
   VersionVector old_vv = vector_clock_;
   vector_clock_ = Merge(old_vv, vv);
 
-  NS_LOG_LOGIC("Update: view_id=" << ToString(view_id_) << ",vector_clock="
-                                  << ToString(vector_clock_));
+  NS_LOG_LOGIC("Update: view_id=" << view_id_
+                                  << ", vector_clock=" << vector_clock_);
 
   for (std::size_t i = 0; i != vv.size(); ++i) {
     if (i == idx_) continue;
@@ -398,7 +396,7 @@ void Node::ProcessVector(const Data& data) {
 void Node::OnRemoteData(const Data& data) {
   const auto& n = data.getName();
   if (n.size() < 2) {
-    NS_LOG_WARN("Invalid data name: " << n.toUri());
+    NS_LOG_WARN("Invalid data name: " << n);
     return;
   }
 
@@ -406,7 +404,7 @@ void Node::OnRemoteData(const Data& data) {
   proto::Content content_proto;
   if (content_proto.ParseFromArray(content.value(), content.value_size())) {
     ViewID vi = {content_proto.view_num(), content_proto.leader_id()};
-    NS_LOG_LOGIC("Recv: d.name=" << n.toUri() << ", vid=" << ToString(vi));
+    NS_LOG_LOGIC("Recv: d.name=" << n << ", vid=" << vi);
 
     auto nid = ExtractNodeID(n);
     auto seq = ExtractSequenceNumber(n);
@@ -427,7 +425,7 @@ void Node::OnRemoteData(const Data& data) {
       if (data_cb_) data_cb_(content_proto.user_data(), vi, vv);
     }
   } else {
-    NS_LOG_WARN("Invalid content format: d.name=" << n.toUri());
+    NS_LOG_WARN("Invalid content format: d.name=" << n);
   }
 }
 
@@ -484,7 +482,7 @@ void Node::PublishHeartbeat() {
 
 void Node::ProcessHeartbeat(const ViewID& vid, const NodeID& nid) {
   if (vid != view_id_) {
-    NS_LOG_INFO("Ignore heartbeat for non-current view id " << ToString(vid));
+    NS_LOG_INFO("Ignore heartbeat for non-current view id " << vid);
     return;
   }
 
@@ -524,8 +522,8 @@ void Node::DoHealthcheck() {
       ++view_id_.first;
       ResetState();
       PublishViewInfo();
-      NS_LOG_INFO("Move to new view: view_id=" << ToString(view_id_)
-                                               << ",vinfo=" << view_info_);
+      NS_LOG_INFO("Move to new view: view_id=" << view_id_
+                                               << ", vinfo=" << view_info_);
       PublishHeartbeat();
     }
   } else {
@@ -552,8 +550,8 @@ void Node::ProcessLeaderElectionTimeout() {
   view_id_ = {view_id_.first + 1, id_};
   ResetState();
   PublishViewInfo();
-  NS_LOG_INFO("Move to new view: view_id=" << ToString(view_id_)
-                                           << ",vinfo=" << view_info_);
+  NS_LOG_INFO("Move to new view: view_id=" << view_id_
+                                           << ", vinfo=" << view_info_);
   PublishHeartbeat();
 }
 
@@ -565,8 +563,7 @@ void Node::PrintCausalityGraph() const {
       NS_LOG_INFO("  NodeID=" << pvv_queue.first << ':');
       NS_LOG_INFO("   Queue=[");
       for (const auto& pvv : pvv_queue.second) {
-        NS_LOG_INFO("      " << ToString(pvv.first) << ':'
-                             << pvv.second->getName().toUri());
+        NS_LOG_INFO("      " << pvv.first << ':' << pvv.second->getName());
       }
       NS_LOG_INFO("         ]");
     }
