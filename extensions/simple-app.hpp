@@ -21,12 +21,12 @@ class SimpleNodeApp : public Application {
             .SetParent<Application>()
             .AddConstructor<SimpleNodeApp>()
             .AddAttribute("NodeID", "Unique ID for the node in the sync group.",
-                          StringValue("A"),
+                          StringValue(""),
                           MakeStringAccessor(&SimpleNodeApp::node_id_),
                           MakeStringChecker())
-            .AddAttribute("NodePrefix", "Unicast prefix for the sync node.",
+            .AddAttribute("RoutingPrefix", "Routing prefix for the sync node.",
                           StringValue("/"),
-                          MakeStringAccessor(&SimpleNodeApp::node_prefix_),
+                          MakeStringAccessor(&SimpleNodeApp::routing_prefix_),
                           MakeStringChecker());
 
     return tid;
@@ -35,18 +35,15 @@ class SimpleNodeApp : public Application {
  protected:
   virtual void StartApplication() {
     node_.reset(new ::ndn::vsync::app::SimpleNode(
-        node_id_, node_prefix_, ndn::StackHelper::getKeyChain()));
+        node_id_, routing_prefix_, ndn::StackHelper::getKeyChain()));
   }
 
-  virtual void StopApplication() {
-    // Stop and destroy the instance of the app
-    node_.reset();
-  }
+  virtual void StopApplication() { node_.reset(); }
 
  private:
   std::unique_ptr<::ndn::vsync::app::SimpleNode> node_;
   std::string node_id_;
-  std::string node_prefix_;
+  std::string routing_prefix_;
 };
 
 }  // namespace vsync

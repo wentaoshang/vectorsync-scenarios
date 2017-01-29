@@ -32,13 +32,12 @@ int main(int argc, char* argv[]) {
   ndn::StrategyChoiceHelper::InstallAll("/vsync",
                                         "/localhost/nfd/strategy/multicast");
 
-  ndn::AppHelper helper0("ns3::ndn::vsync::SimpleNodeApp");
-  helper0.SetAttribute("NodeID", StringValue("A"));
-  helper0.Install(nodes.Get(0)).Start(Seconds(1.0));
-
-  ndn::AppHelper helper1("ns3::ndn::vsync::SimpleNodeApp");
-  helper1.SetAttribute("NodeID", StringValue("B"));
-  helper1.Install(nodes.Get(1)).Start(Seconds(1.0));
+  for (int i = 0; i < 2; ++i) {
+    ndn::AppHelper helper("ns3::ndn::vsync::SimpleNodeApp");
+    helper.SetAttribute(
+        "NodeID", StringValue("N" + std::to_string(nodes.Get(i)->GetId())));
+    helper.Install(nodes.Get(i)).Start(Seconds(1.0));
+  }
 
   ndn::FibHelper::AddRoute(nodes.Get(0), "/vsync", nodes.Get(1), 1);
   ndn::FibHelper::AddRoute(nodes.Get(1), "/vsync", nodes.Get(0), 1);
