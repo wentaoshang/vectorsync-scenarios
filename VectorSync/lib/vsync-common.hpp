@@ -26,7 +26,7 @@ using ViewID = std::pair<uint64_t, NodeID>;
 using VersionVector = std::vector<uint64_t>;
 using NodeIndex = std::size_t;
 
-static const Name kSyncPrefix = Name("/ndn/broadcast/vsync");
+static const Name kSyncPrefix = Name("/vsync");
 
 static constexpr time::seconds kHeartbeatInterval = time::seconds(4);
 static constexpr time::seconds kHeartbeatTimeout = 3 * kHeartbeatInterval;

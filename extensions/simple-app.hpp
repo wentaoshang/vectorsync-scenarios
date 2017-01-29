@@ -1,7 +1,7 @@
 /* -*- Mode:C++; c-file-style:"google"; indent-tabs-mode:nil; -*- */
 
-#ifndef SIMPLE_STARTER_HPP_
-#define SIMPLE_STARTER_HPP_
+#ifndef SIMPLE_APP_HPP_
+#define SIMPLE_APP_HPP_
 
 #include "ns3/application.h"
 #include "ns3/ndnSIM/helper/ndn-stack-helper.hpp"
@@ -10,21 +10,23 @@
 #include "simple.hpp"
 
 namespace ns3 {
+namespace ndn {
+namespace vsync {
 
-class SimpleNodeStarter : public Application {
+class SimpleNodeApp : public Application {
  public:
   static TypeId GetTypeId() {
     static TypeId tid =
-        TypeId("SimpleNodeStarter")
+        TypeId("ns3::ndn::vsync::SimpleNodeApp")
             .SetParent<Application>()
-            .AddConstructor<SimpleNodeStarter>()
+            .AddConstructor<SimpleNodeApp>()
             .AddAttribute("NodeID", "Unique ID for the node in the sync group.",
                           StringValue("A"),
-                          MakeStringAccessor(&SimpleNodeStarter::node_id_),
+                          MakeStringAccessor(&SimpleNodeApp::node_id_),
                           MakeStringChecker())
             .AddAttribute("NodePrefix", "Unicast prefix for the sync node.",
                           StringValue("/"),
-                          MakeStringAccessor(&SimpleNodeStarter::node_prefix_),
+                          MakeStringAccessor(&SimpleNodeApp::node_prefix_),
                           MakeStringChecker());
 
     return tid;
@@ -47,6 +49,8 @@ class SimpleNodeStarter : public Application {
   std::string node_prefix_;
 };
 
+}  // namespace vsync
+}  // namespace ndn
 }  // namespace ns3
 
-#endif  // SIMPLE_STARTER_HPP_
+#endif  // SIMPLE_APP_HPP_

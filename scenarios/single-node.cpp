@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"google"; indent-tabs-mode:nil; -*- */
 
-#include "simple-starter.hpp"
+#include "simple-app.hpp"
 #include "simple.hpp"
 
 #include "ns3/core-module.h"
@@ -8,8 +8,6 @@
 #include "ns3/network-module.h"
 
 namespace ns3 {
-
-NS_OBJECT_ENSURE_REGISTERED(SimpleNodeStarter);
 
 int main(int argc, char* argv[]) {
   CommandLine cmd;
@@ -20,7 +18,7 @@ int main(int argc, char* argv[]) {
   ndn::StackHelper ndnHelper;
   ndnHelper.Install(node);
 
-  ndn::AppHelper appHelper("SimpleNodeStarter");
+  ndn::AppHelper appHelper("ns3::ndn::vsync::SimpleNodeApp");
   appHelper.SetAttribute("NodeID", StringValue("B"));
   appHelper.Install(node).Start(Seconds(1.5));
 

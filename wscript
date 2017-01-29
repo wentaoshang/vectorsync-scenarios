@@ -81,7 +81,7 @@ def build (bld):
         target = "extensions",
         features = ["cxx"],
         source = bld.path.ant_glob(['extensions/**/*.cc', 'extensions/**/*.cpp']),
-        use = deps,
+        use = deps + " vsync",
         )
 
     for scenario in bld.path.ant_glob (['scenarios/*.cc']):
