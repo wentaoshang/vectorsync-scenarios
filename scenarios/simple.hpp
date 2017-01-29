@@ -6,7 +6,7 @@
 #include <functional>
 #include <random>
 
-#include "VectorSync/vsync.hpp"
+#include "vsync.hpp"
 
 namespace ndn {
 namespace vsync {
