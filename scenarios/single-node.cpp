@@ -21,9 +21,10 @@ int main(int argc, char* argv[]) {
   ndnHelper.Install(node);
 
   ndn::AppHelper appHelper("SimpleNodeStarter");
+  appHelper.SetAttribute("NodeID", StringValue("B"));
   appHelper.Install(node).Start(Seconds(1.5));
 
-  Simulator::Stop(Seconds(20.0));
+  Simulator::Stop(Seconds(60.0));
 
   Simulator::Run();
   Simulator::Destroy();
