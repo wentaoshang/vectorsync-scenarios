@@ -1,12 +1,13 @@
 /* -*- Mode:C++; c-file-style:"google"; indent-tabs-mode:nil; -*- */
 
 #include "simple-app.hpp"
-#include "simple.hpp"
 
 #include "ns3/core-module.h"
 #include "ns3/ndnSIM-module.h"
 #include "ns3/network-module.h"
 #include "ns3/point-to-point-module.h"
+
+NS_LOG_COMPONENT_DEFINE("ns3.ndn.vsync.scenarios.TwoNodes");
 
 namespace ns3 {
 

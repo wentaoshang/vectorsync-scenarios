@@ -6,6 +6,8 @@
 #include "ns3/application.h"
 #include "ns3/ndnSIM/helper/ndn-stack-helper.hpp"
 #include "ns3/string.h"
+#include "ns3/trace-source-accessor.h"
+#include "ns3/traced-callback.h"
 
 #include "simple.hpp"
 
@@ -15,6 +17,8 @@ namespace vsync {
 
 class SimpleNodeApp : public Application {
  public:
+  typedef void (*VectorClockTraceCallback)(::ndn::vsync::VersionVector);
+
   static TypeId GetTypeId() {
     static TypeId tid =
         TypeId("ns3::ndn::vsync::SimpleNodeApp")
@@ -27,7 +31,11 @@ class SimpleNodeApp : public Application {
             .AddAttribute("RoutingPrefix", "Routing prefix for the sync node.",
                           StringValue("/"),
                           MakeStringAccessor(&SimpleNodeApp::routing_prefix_),
-                          MakeStringChecker());
+                          MakeStringChecker())
+            .AddTraceSource(
+                "VectorClock", "Vector clock of the sync node.",
+                MakeTraceSourceAccessor(&SimpleNodeApp::vector_clock_trace_),
+                "ns3::ndn::vsync::SimpleNodeApp::VectorClockTraceCallback");
 
     return tid;
   }
@@ -35,16 +43,23 @@ class SimpleNodeApp : public Application {
  protected:
   virtual void StartApplication() {
     node_.reset(new ::ndn::vsync::app::SimpleNode(
-        node_id_, routing_prefix_, ndn::StackHelper::getKeyChain()));
+        node_id_, routing_prefix_, ndn::StackHelper::getKeyChain(),
+        std::bind(&SimpleNodeApp::VectorClockTrace, this, _1)));
     node_->Start();
   }
 
   virtual void StopApplication() { node_.reset(); }
 
+  void VectorClockTrace(const ::ndn::vsync::VersionVector& vc) {
+    vector_clock_trace_(vc);
+  }
+
  private:
   std::unique_ptr<::ndn::vsync::app::SimpleNode> node_;
   std::string node_id_;
   std::string routing_prefix_;
+
+  TracedCallback<::ndn::vsync::VersionVector> vector_clock_trace_;
 };
 
 }  // namespace vsync
