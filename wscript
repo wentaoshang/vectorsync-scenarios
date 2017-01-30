@@ -75,7 +75,6 @@ def build (bld):
         includes = "VectorSync/lib",
         export_includes = "VectorSync/lib",
         use = deps,
-        cxxflags = ['-DENABLE_NS3_LOGGING'],
         )
     
     common = bld.objects (
