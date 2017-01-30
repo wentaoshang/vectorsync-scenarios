@@ -36,6 +36,7 @@ class SimpleNodeApp : public Application {
   virtual void StartApplication() {
     node_.reset(new ::ndn::vsync::app::SimpleNode(
         node_id_, routing_prefix_, ndn::StackHelper::getKeyChain()));
+    node_->Start();
   }
 
   virtual void StopApplication() { node_.reset(); }
