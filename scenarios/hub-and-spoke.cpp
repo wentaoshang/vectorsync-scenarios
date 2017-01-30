@@ -36,29 +36,25 @@ int main(int argc, char* argv[]) {
                                         "/localhost/nfd/strategy/multicast");
 
   ndn::AppHelper helper1("ns3::ndn::vsync::SimpleNodeApp");
-  helper1.SetAttribute(
-      "NodeID", StringValue("N" + std::to_string(nodes.Get(1)->GetId())));
+  helper1.SetAttribute("NodeID", StringValue("N1"));
   helper1.Install(nodes.Get(1)).Start(Seconds(1.0));
 
   ndn::AppHelper helper2("ns3::ndn::vsync::SimpleNodeApp");
-  helper2.SetAttribute(
-      "NodeID", StringValue("N" + std::to_string(nodes.Get(2)->GetId())));
+  helper2.SetAttribute("NodeID", StringValue("N2"));
   helper2.SetAttribute("StartTime", TimeValue(Seconds(10.0)));
   helper2.SetAttribute("StopTime", TimeValue(Seconds(35.0)));
   helper2.Install(nodes.Get(2));
 
   ndn::AppHelper helper3("ns3::ndn::vsync::SimpleNodeApp");
-  helper3.SetAttribute(
-      "NodeID", StringValue("N" + std::to_string(nodes.Get(3)->GetId())));
+  helper3.SetAttribute("NodeID", StringValue("N3"));
   helper3.Install(nodes.Get(3)).Start(Seconds(20.0));
 
   for (int i = 1; i <= 3; ++i) {
     ndn::FibHelper::AddRoute(nodes.Get(0), ::ndn::vsync::kSyncPrefix.toUri(),
                              nodes.Get(i), 1);
-    StringValue nid, pfx;
+    StringValue nid;
     nodes.Get(i)->GetApplication(0)->GetAttribute("NodeID", nid);
-    nodes.Get(i)->GetApplication(0)->GetAttribute("RoutingPrefix", pfx);
-    std::string node_prefix = pfx.Get() + '/' + nid.Get();
+    std::string node_prefix = "/" + nid.Get();
     ndn::FibHelper::AddRoute(nodes.Get(0), node_prefix, nodes.Get(i), 1);
 
     ndn::FibHelper::AddRoute(nodes.Get(i), "/", nodes.Get(0), 1);
