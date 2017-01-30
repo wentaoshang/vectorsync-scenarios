@@ -29,7 +29,7 @@ int main(int argc, char* argv[]) {
   ndnHelper.SetDefaultRoutes(true);
   ndnHelper.InstallAll();
 
-  ndn::StrategyChoiceHelper::InstallAll("/vsync",
+  ndn::StrategyChoiceHelper::InstallAll(::ndn::vsync::kSyncPrefix.toUri(),
                                         "/localhost/nfd/strategy/multicast");
 
   for (int i = 0; i < 2; ++i) {
@@ -39,8 +39,10 @@ int main(int argc, char* argv[]) {
     helper.Install(nodes.Get(i)).Start(Seconds(1.0));
   }
 
-  ndn::FibHelper::AddRoute(nodes.Get(0), "/vsync", nodes.Get(1), 1);
-  ndn::FibHelper::AddRoute(nodes.Get(1), "/vsync", nodes.Get(0), 1);
+  ndn::FibHelper::AddRoute(nodes.Get(0), ::ndn::vsync::kSyncPrefix.toUri(),
+                           nodes.Get(1), 1);
+  ndn::FibHelper::AddRoute(nodes.Get(1), ::ndn::vsync::kSyncPrefix.toUri(),
+                           nodes.Get(0), 1);
 
   Simulator::Stop(Seconds(60.0));
 

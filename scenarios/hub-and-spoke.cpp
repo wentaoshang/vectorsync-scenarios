@@ -32,7 +32,7 @@ int main(int argc, char* argv[]) {
   ndnHelper.SetDefaultRoutes(true);
   ndnHelper.InstallAll();
 
-  ndn::StrategyChoiceHelper::InstallAll("/vsync",
+  ndn::StrategyChoiceHelper::InstallAll(::ndn::vsync::kSyncPrefix.toUri(),
                                         "/localhost/nfd/strategy/multicast");
 
   ndn::AppHelper helper1("ns3::ndn::vsync::SimpleNodeApp");
@@ -53,7 +53,8 @@ int main(int argc, char* argv[]) {
   helper3.Install(nodes.Get(3)).Start(Seconds(20.0));
 
   for (int i = 1; i <= 3; ++i) {
-    ndn::FibHelper::AddRoute(nodes.Get(0), "/vsync", nodes.Get(i), 1);
+    ndn::FibHelper::AddRoute(nodes.Get(0), ::ndn::vsync::kSyncPrefix.toUri(),
+                             nodes.Get(i), 1);
     StringValue nid, pfx;
     nodes.Get(i)->GetApplication(0)->GetAttribute("NodeID", nid);
     nodes.Get(i)->GetApplication(0)->GetAttribute("RoutingPrefix", pfx);
@@ -61,7 +62,8 @@ int main(int argc, char* argv[]) {
     ndn::FibHelper::AddRoute(nodes.Get(0), node_prefix, nodes.Get(i), 1);
 
     ndn::FibHelper::AddRoute(nodes.Get(i), "/", nodes.Get(0), 1);
-    ndn::FibHelper::AddRoute(nodes.Get(i), "/vsync", nodes.Get(0), 1);
+    ndn::FibHelper::AddRoute(nodes.Get(i), ::ndn::vsync::kSyncPrefix.toUri(),
+                             nodes.Get(0), 1);
   }
 
   Simulator::Stop(Seconds(60.0));

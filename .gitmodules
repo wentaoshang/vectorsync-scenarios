@@ -1,0 +1,3 @@
+[submodule "VectorSync"]
+	path = VectorSync
+	url = https://github.com/wentaoshang/VectorSync.git
