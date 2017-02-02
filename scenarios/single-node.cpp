@@ -10,8 +10,8 @@ NS_LOG_COMPONENT_DEFINE("ns3.ndn.vsync.scenarios.SingleNode");
 
 namespace ns3 {
 
-static void VectorClockChange(::ndn::vsync::VersionVector vc) {
-  NS_LOG_LOGIC(Simulator::Now().GetSeconds() << " vector_clock=" << vc);
+static void VectorClockChange(const ::ndn::vsync::VersionVector& vc) {
+  NS_LOG_LOGIC("vector_clock=" << vc);
 }
 
 int main(int argc, char* argv[]) {

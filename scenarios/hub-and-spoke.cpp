@@ -11,6 +11,14 @@ NS_LOG_COMPONENT_DEFINE("ns3.ndn.vsync.scenarios.HubAndSpoke");
 
 namespace ns3 {
 
+static void VectorClockChange(const ::ndn::vsync::VersionVector& vc) {
+  NS_LOG_INFO("vector_clock=" << vc);
+}
+
+static void ViewIDChange(const ::ndn::vsync::ViewID& vid) {
+  NS_LOG_INFO("view_id=" << vid);
+}
+
 int main(int argc, char* argv[]) {
   Config::SetDefault("ns3::PointToPointNetDevice::DataRate",
                      StringValue("10Mbps"));
@@ -61,6 +69,11 @@ int main(int argc, char* argv[]) {
     ndn::FibHelper::AddRoute(nodes.Get(i), "/", nodes.Get(0), 1);
     ndn::FibHelper::AddRoute(nodes.Get(i), ::ndn::vsync::kSyncPrefix.toUri(),
                              nodes.Get(0), 1);
+
+    nodes.Get(i)->GetApplication(0)->TraceConnectWithoutContext(
+        "VectorClock", MakeCallback(&VectorClockChange));
+    nodes.Get(i)->GetApplication(0)->TraceConnectWithoutContext(
+        "ViewID", MakeCallback(&ViewIDChange));
   }
 
   Simulator::Stop(Seconds(60.0));

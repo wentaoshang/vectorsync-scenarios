@@ -14,17 +14,16 @@ namespace app {
 
 class SimpleNode {
  public:
-  using VectorClockCallback = std::function<void(const VersionVector&)>;
+  using OnDataEventTraceCb = std::function<void(
+      const std::string&, const ViewID&, const VersionVector&)>;
 
-  SimpleNode(const NodeID& nid, const Name& prefix, KeyChain& keychain,
-             VectorClockCallback vc_cb)
+  SimpleNode(const NodeID& nid, const Name& prefix, KeyChain& keychain)
       : scheduler_(face_.getIoService()),
         key_chain_(keychain),
         node_(face_, scheduler_, key_chain_, nid, prefix,
               std::bind(&SimpleNode::OnData, this, _1, _2, _3)),
         rengine_(rdevice_()),
-        rdist_(500, 10000),
-        vc_cb_(vc_cb) {}
+        rdist_(500, 10000) {}
 
   void Start() {
     scheduler_.scheduleEvent(time::milliseconds(rdist_(rengine_)),
@@ -32,17 +31,26 @@ class SimpleNode {
     face_.processEvents();
   }
 
+  void ConnectVectorClockTrace(Node::VectorClockChangeCb cb) {
+    node_.ConnectVectorClockChangeSignal(cb);
+  }
+
+  void ConnectViewIDTrace(Node::ViewIDChangeCb cb) {
+    node_.ConnectViewIDChangeSignal(cb);
+  }
+
+  void ConnectOnDataEventTrace(OnDataEventTraceCb cb) {
+    on_data_event_trace_.connect(cb);
+  }
+
  private:
   void OnData(const std::string& content, const ViewID& vi,
               const VersionVector& vv) {
-    std::cout << "Upcall OnData: content=\"" << content << "\", vi=" << vi
-              << ", vv=" << vv << std::endl;
-    vc_cb_(node_.GetCurrentVectorClock());
+    on_data_event_trace_(content, vi, vv);
   }
 
   void PublishData() {
     node_.PublishData("Hello from " + node_.GetNodeID());
-    vc_cb_(node_.GetCurrentVectorClock());
     scheduler_.scheduleEvent(time::milliseconds(rdist_(rengine_)),
                              [this] { PublishData(); });
   }
@@ -56,7 +64,9 @@ class SimpleNode {
   std::mt19937 rengine_;
   std::uniform_int_distribution<> rdist_;
 
-  VectorClockCallback vc_cb_;
+  util::Signal<SimpleNode, const std::string&, const ViewID&,
+               const VersionVector&>
+      on_data_event_trace_;
 };
 
 }  // namespace app
