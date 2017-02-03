@@ -19,6 +19,8 @@ class SimpleNodeApp : public Application {
  public:
   typedef void (*VectorClockTraceCallback)(const ::ndn::vsync::VersionVector&);
   typedef void (*ViewIDTraceCallback)(const ::ndn::vsync::ViewID&);
+  typedef void (*DataEventTraceCallback)(std::shared_ptr<const ndn::Data>,
+                                         bool);
 
   static TypeId GetTypeId() {
     static TypeId tid =
@@ -40,7 +42,12 @@ class SimpleNodeApp : public Application {
             .AddTraceSource(
                 "ViewID", "View ID of the sync node.",
                 MakeTraceSourceAccessor(&SimpleNodeApp::view_id_trace_),
-                "ns3::ndn::vsync::SimpleNodeApp::ViewIDTraceCallback");
+                "ns3::ndn::vsync::SimpleNodeApp::ViewIDTraceCallback")
+            .AddTraceSource(
+                "DataEvent",
+                "Event of publishing or receiving new data in the sync node.",
+                MakeTraceSourceAccessor(&SimpleNodeApp::data_event_trace_),
+                "ns3::ndn::vsync::SimpleNodeApp::DataEventTraceCallback");
 
     return tid;
   }
@@ -52,6 +59,8 @@ class SimpleNodeApp : public Application {
     node_->ConnectVectorClockTrace(
         std::bind(&SimpleNodeApp::TraceVectorClock, this, _1));
     node_->ConnectViewIDTrace(std::bind(&SimpleNodeApp::TraceViewID, this, _1));
+    node_->ConnectDataEventTrace(
+        std::bind(&SimpleNodeApp::TraceDataEvent, this, _1, _2));
     node_->Start();
   }
 
@@ -63,6 +72,10 @@ class SimpleNodeApp : public Application {
 
   void TraceViewID(const ::ndn::vsync::ViewID& vid) { view_id_trace_(vid); }
 
+  void TraceDataEvent(std::shared_ptr<const ndn::Data> data, bool is_local) {
+    data_event_trace_(data, is_local);
+  }
+
  private:
   std::unique_ptr<::ndn::vsync::app::SimpleNode> node_;
   std::string node_id_;
@@ -70,6 +83,7 @@ class SimpleNodeApp : public Application {
 
   TracedCallback<const ::ndn::vsync::ViewID&> view_id_trace_;
   TracedCallback<const ::ndn::vsync::VersionVector&> vector_clock_trace_;
+  TracedCallback<std::shared_ptr<const ndn::Data>, bool> data_event_trace_;
 };
 
 }  // namespace vsync

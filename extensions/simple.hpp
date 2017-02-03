@@ -14,14 +14,16 @@ namespace app {
 
 class SimpleNode {
  public:
-  using OnDataEventTraceCb = std::function<void(
-      const std::string&, const ViewID&, const VersionVector&)>;
+  // First parameter is the new Data; second parameter indicates whether the
+  // data is published locally.
+  using DataEventTraceCb =
+      std::function<void(std::shared_ptr<const Data>, bool)>;
 
   SimpleNode(const NodeID& nid, const Name& prefix, KeyChain& keychain)
       : scheduler_(face_.getIoService()),
         key_chain_(keychain),
         node_(face_, scheduler_, key_chain_, nid, prefix,
-              std::bind(&SimpleNode::OnData, this, _1, _2, _3)),
+              std::bind(&SimpleNode::OnData, this, _1, _2, _3, _4)),
         rengine_(rdevice_()),
         rdist_(500, 10000) {}
 
@@ -39,18 +41,21 @@ class SimpleNode {
     node_.ConnectViewIDChangeSignal(cb);
   }
 
-  void ConnectOnDataEventTrace(OnDataEventTraceCb cb) {
-    on_data_event_trace_.connect(cb);
+  void ConnectDataEventTrace(DataEventTraceCb cb) {
+    data_event_trace_.connect(cb);
   }
 
  private:
-  void OnData(const std::string& content, const ViewID& vi,
-              const VersionVector& vv) {
-    on_data_event_trace_(content, vi, vv);
+  void OnData(std::shared_ptr<const Data> data, const std::string& content,
+              const ViewID& vi, const VersionVector& vv) {
+    data_event_trace_(data, false);
   }
 
   void PublishData() {
-    node_.PublishData("Hello from " + node_.GetNodeID());
+    std::shared_ptr<const Data> data;
+    std::tie(data, std::ignore, std::ignore) =
+        node_.PublishData("Hello from " + node_.GetNodeID());
+    data_event_trace_(data, true);
     scheduler_.scheduleEvent(time::milliseconds(rdist_(rengine_)),
                              [this] { PublishData(); });
   }
@@ -64,9 +69,7 @@ class SimpleNode {
   std::mt19937 rengine_;
   std::uniform_int_distribution<> rdist_;
 
-  util::Signal<SimpleNode, const std::string&, const ViewID&,
-               const VersionVector&>
-      on_data_event_trace_;
+  util::Signal<SimpleNode, std::shared_ptr<const Data>, bool> data_event_trace_;
 };
 
 }  // namespace app

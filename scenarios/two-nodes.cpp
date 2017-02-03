@@ -11,6 +11,11 @@ NS_LOG_COMPONENT_DEFINE("ns3.ndn.vsync.scenarios.TwoNodes");
 
 namespace ns3 {
 
+static void DataEvent(std::shared_ptr<const ndn::Data> data, bool is_local) {
+  NS_LOG_INFO("new data: name=" << data->getName() << ", isLocal="
+                                << (is_local ? "true" : "false"));
+}
+
 int main(int argc, char* argv[]) {
   Config::SetDefault("ns3::PointToPointNetDevice::DataRate",
                      StringValue("10Mbps"));
@@ -38,6 +43,8 @@ int main(int argc, char* argv[]) {
     helper.SetAttribute(
         "NodeID", StringValue("N" + std::to_string(nodes.Get(i)->GetId())));
     helper.Install(nodes.Get(i)).Start(Seconds(1.0));
+    nodes.Get(i)->GetApplication(0)->TraceConnectWithoutContext(
+        "DataEvent", MakeCallback(&DataEvent));
   }
 
   ndn::FibHelper::AddRoute(nodes.Get(0), ::ndn::vsync::kSyncPrefix.toUri(),
