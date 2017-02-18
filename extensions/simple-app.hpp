@@ -3,11 +3,14 @@
 #ifndef SIMPLE_APP_HPP_
 #define SIMPLE_APP_HPP_
 
+#include <limits>
+
 #include "ns3/application.h"
 #include "ns3/ndnSIM/helper/ndn-stack-helper.hpp"
 #include "ns3/string.h"
 #include "ns3/trace-source-accessor.h"
 #include "ns3/traced-callback.h"
+#include "ns3/uinteger.h"
 
 #include "simple.hpp"
 
@@ -35,6 +38,10 @@ class SimpleNodeApp : public Application {
                           StringValue("/"),
                           MakeStringAccessor(&SimpleNodeApp::routing_prefix_),
                           MakeStringChecker())
+            .AddAttribute(
+                "RandomSeed", "Seed used for the random number generator.",
+                UintegerValue(0), MakeUintegerAccessor(&SimpleNodeApp::seed_),
+                MakeUintegerChecker<uint32_t>())
             .AddTraceSource(
                 "VectorClock", "Vector clock of the sync node.",
                 MakeTraceSourceAccessor(&SimpleNodeApp::vector_clock_trace_),
@@ -55,7 +62,7 @@ class SimpleNodeApp : public Application {
  protected:
   virtual void StartApplication() {
     node_.reset(new ::ndn::vsync::app::SimpleNode(
-        node_id_, routing_prefix_, ndn::StackHelper::getKeyChain()));
+        node_id_, routing_prefix_, ndn::StackHelper::getKeyChain(), seed_));
     node_->ConnectVectorClockTrace(
         std::bind(&SimpleNodeApp::TraceVectorClock, this, _1));
     node_->ConnectViewIDTrace(std::bind(&SimpleNodeApp::TraceViewID, this, _1));
@@ -80,6 +87,7 @@ class SimpleNodeApp : public Application {
   std::unique_ptr<::ndn::vsync::app::SimpleNode> node_;
   std::string node_id_;
   std::string routing_prefix_;
+  uint32_t seed_;
 
   TracedCallback<const ::ndn::vsync::ViewID&> view_id_trace_;
   TracedCallback<const ::ndn::vsync::VersionVector&> vector_clock_trace_;
