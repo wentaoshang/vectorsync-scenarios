@@ -29,7 +29,9 @@ class SimpleNode {
         rdist_(500, 10000) {}
 
   void Start() {
-    scheduler_.scheduleEvent(time::milliseconds(rdist_(rengine_)),
+    // Wait for 8 seconds before publishing the first data packet.
+    // This allows the view change process to stablize.
+    scheduler_.scheduleEvent(time::milliseconds(8000 + rdist_(rengine_)),
                              [this] { PublishData(); });
     face_.processEvents();
   }

@@ -26,7 +26,6 @@ static void DataEvent(std::shared_ptr<const ndn::Data> data, bool is_local) {
                                 << (is_local ? "true" : "false"));
 
   double now = Simulator::Now().GetSeconds();
-  if (now < 10.0) return;  // wait until the group has stablized
 
   auto& entry = delays[name];
   if (is_local)
