@@ -46,11 +46,15 @@ int main(int argc, char* argv[]) {
   Config::SetDefault("ns3::PointToPointChannel::Delay", StringValue("10ms"));
   Config::SetDefault("ns3::DropTailQueue::MaxPackets", StringValue("100"));
 
-  CommandLine cmd;
-  cmd.Parse(argc, argv);
+  int N = 10;
+  double TotalRunTimeSeconds = 60.0;
 
-  const int N = 10;
-  const double TotalRunTimeSeconds = 600.0;
+  CommandLine cmd;
+  cmd.AddValue("NumOfNodes", "Number of sync nodes in the group", N);
+  cmd.AddValue("TotalRunTimeSeconds",
+               "Total running time of the simulation in seconds",
+               TotalRunTimeSeconds);
+  cmd.Parse(argc, argv);
 
   NodeContainer nodes;
   nodes.Create(N + 1);
