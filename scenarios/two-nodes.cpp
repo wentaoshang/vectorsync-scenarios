@@ -53,12 +53,15 @@ int main(int argc, char* argv[]) {
   ndn::StrategyChoiceHelper::InstallAll(::ndn::vsync::kSyncPrefix.toUri(),
                                         "/localhost/nfd/strategy/multicast");
 
-  Ptr<UniformRandomVariable> x = CreateObject<UniformRandomVariable>();
+  Ptr<UniformRandomVariable> seed = CreateObject<UniformRandomVariable>();
+  seed->SetAttribute("Min", DoubleValue(0.0));
+  seed->SetAttribute("Max", DoubleValue(1000.0));
+
   for (int i = 0; i < 2; ++i) {
     ndn::AppHelper helper("ns3::ndn::vsync::SimpleNodeApp");
     helper.SetAttribute(
         "NodeID", StringValue("N" + std::to_string(nodes.Get(i)->GetId())));
-    helper.SetAttribute("RandomSeed", UintegerValue(x->GetInteger()));
+    helper.SetAttribute("RandomSeed", UintegerValue(seed->GetInteger()));
     helper.Install(nodes.Get(i)).Start(Seconds(1.0));
     nodes.Get(i)->GetApplication(0)->TraceConnectWithoutContext(
         "DataEvent", MakeCallback(&DataEvent));

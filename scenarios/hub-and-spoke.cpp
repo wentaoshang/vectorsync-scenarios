@@ -24,7 +24,10 @@ static void DataEvent(std::shared_ptr<const ndn::Data> data, bool is_local) {
   auto name = data->getName().toUri();
   NS_LOG_INFO("new data: name=" << name << ", isLocal="
                                 << (is_local ? "true" : "false"));
+
   double now = Simulator::Now().GetSeconds();
+  if (now < 10.0) return;  // wait until the group has stablized
+
   auto& entry = delays[name];
   if (is_local)
     entry.first = now;
@@ -71,6 +74,8 @@ int main(int argc, char* argv[]) {
                                         "/localhost/nfd/strategy/multicast");
 
   Ptr<UniformRandomVariable> seed = CreateObject<UniformRandomVariable>();
+  seed->SetAttribute("Min", DoubleValue(0.0));
+  seed->SetAttribute("Max", DoubleValue(1000.0));
 
   for (int i = 1; i <= N; ++i) {
     ndn::AppHelper helper("ns3::ndn::vsync::SimpleNodeApp");
