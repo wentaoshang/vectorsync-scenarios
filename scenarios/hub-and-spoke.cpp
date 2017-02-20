@@ -20,10 +20,11 @@ namespace ns3 {
 
 std::unordered_map<std::string, std::pair<double, std::vector<double>>> delays;
 
-static void DataEvent(std::shared_ptr<const ndn::Data> data, bool is_local) {
+static void DataEvent(std::string nid, std::shared_ptr<const ndn::Data> data,
+                      bool is_local) {
   auto name = data->getName().toUri();
-  NS_LOG_INFO("new data: name=" << name << ", isLocal="
-                                << (is_local ? "true" : "false"));
+  NS_LOG_INFO("new_data_name=" << name << ", node_id=" << nid << ", is_local="
+                               << (is_local ? "true" : "false"));
 
   double now = Simulator::Now().GetSeconds();
 
@@ -34,12 +35,16 @@ static void DataEvent(std::shared_ptr<const ndn::Data> data, bool is_local) {
     entry.second.push_back(now);
 }
 
-static void VectorClockChange(const ::ndn::vsync::VersionVector& vc) {
-  NS_LOG_INFO("vector_clock=" << vc);
+static void VectorClockChange(std::string nid, std::size_t idx,
+                              const ::ndn::vsync::VersionVector& vc) {
+  NS_LOG_INFO("node_id=\"" << nid << "\", node_index=" << idx
+                           << ", vector_clock=" << vc);
 }
 
-static void ViewIDChange(const ::ndn::vsync::ViewID& vid) {
-  NS_LOG_INFO("view_id=" << vid);
+static void ViewChange(std::string nid, const ::ndn::vsync::ViewID& vid,
+                       const ::ndn::vsync::ViewInfo& vinfo) {
+  NS_LOG_INFO("node_id=\"" << nid << "\", view_id=" << vid
+                           << ", view_info=" << vinfo);
 }
 
 int main(int argc, char* argv[]) {
@@ -83,7 +88,8 @@ int main(int argc, char* argv[]) {
 
   for (int i = 1; i <= N; ++i) {
     ndn::AppHelper helper("ns3::ndn::vsync::SimpleNodeApp");
-    helper.SetAttribute("NodeID", StringValue("N" + std::to_string(i)));
+    std::string nid = 'N' + std::to_string(i);
+    helper.SetAttribute("NodeID", StringValue(nid));
     if (!Synchronized)
       helper.SetAttribute("RandomSeed", UintegerValue(seed->GetInteger()));
     helper.SetAttribute("StartTime", TimeValue(Seconds(1.0)));
@@ -92,19 +98,19 @@ int main(int argc, char* argv[]) {
 
     ndn::FibHelper::AddRoute(nodes.Get(0), ::ndn::vsync::kSyncPrefix.toUri(),
                              nodes.Get(i), 1);
-    std::string node_prefix = "/N" + std::to_string(i);
+    std::string node_prefix = '/' + nid;
     ndn::FibHelper::AddRoute(nodes.Get(0), node_prefix, nodes.Get(i), 1);
 
     ndn::FibHelper::AddRoute(nodes.Get(i), "/", nodes.Get(0), 1);
     ndn::FibHelper::AddRoute(nodes.Get(i), ::ndn::vsync::kSyncPrefix.toUri(),
                              nodes.Get(0), 1);
 
-    nodes.Get(i)->GetApplication(0)->TraceConnectWithoutContext(
-        "VectorClock", MakeCallback(&VectorClockChange));
-    nodes.Get(i)->GetApplication(0)->TraceConnectWithoutContext(
-        "ViewID", MakeCallback(&ViewIDChange));
-    nodes.Get(i)->GetApplication(0)->TraceConnectWithoutContext(
-        "DataEvent", MakeCallback(&DataEvent));
+    nodes.Get(i)->GetApplication(0)->TraceConnect(
+        "VectorClock", nid, MakeCallback(&VectorClockChange));
+    nodes.Get(i)->GetApplication(0)->TraceConnect("ViewChange", nid,
+                                                  MakeCallback(&ViewChange));
+    nodes.Get(i)->GetApplication(0)->TraceConnect("DataEvent", nid,
+                                                  MakeCallback(&DataEvent));
   }
 
   Simulator::Stop(Seconds(TotalRunTimeSeconds));

@@ -40,8 +40,8 @@ class SimpleNode {
     node_.ConnectVectorClockChangeSignal(cb);
   }
 
-  void ConnectViewIDTrace(Node::ViewIDChangeCb cb) {
-    node_.ConnectViewIDChangeSignal(cb);
+  void ConnectViewChangeTrace(Node::ViewChangeCb cb) {
+    node_.ConnectViewChangeSignal(cb);
   }
 
   void ConnectDataEventTrace(DataEventTraceCb cb) {
