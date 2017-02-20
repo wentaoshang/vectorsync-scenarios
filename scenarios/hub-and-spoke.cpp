@@ -50,12 +50,17 @@ int main(int argc, char* argv[]) {
 
   int N = 10;
   double TotalRunTimeSeconds = 60.0;
+  bool Synchronized = false;
 
   CommandLine cmd;
   cmd.AddValue("NumOfNodes", "Number of sync nodes in the group", N);
   cmd.AddValue("TotalRunTimeSeconds",
                "Total running time of the simulation in seconds",
                TotalRunTimeSeconds);
+  cmd.AddValue(
+      "Synchronized",
+      "If set, the data publishing events from all nodes are synchronized",
+      Synchronized);
   cmd.Parse(argc, argv);
 
   NodeContainer nodes;
@@ -79,7 +84,8 @@ int main(int argc, char* argv[]) {
   for (int i = 1; i <= N; ++i) {
     ndn::AppHelper helper("ns3::ndn::vsync::SimpleNodeApp");
     helper.SetAttribute("NodeID", StringValue("N" + std::to_string(i)));
-    helper.SetAttribute("RandomSeed", UintegerValue(seed->GetInteger()));
+    if (!Synchronized)
+      helper.SetAttribute("RandomSeed", UintegerValue(seed->GetInteger()));
     helper.SetAttribute("StartTime", TimeValue(Seconds(1.0)));
     helper.SetAttribute("StopTime", TimeValue(Seconds(TotalRunTimeSeconds)));
     helper.Install(nodes.Get(i));
