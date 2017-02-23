@@ -24,7 +24,7 @@ class SimpleNode {
       : scheduler_(face_.getIoService()),
         key_chain_(keychain),
         node_(face_, scheduler_, key_chain_, nid, prefix,
-              std::bind(&SimpleNode::OnData, this, _1, _2, _3, _4)),
+              std::bind(&SimpleNode::OnData, this, _1, _2, _3, _4), seed),
         rengine_(seed),
         rdist_(500, 10000) {}
 
