@@ -90,7 +90,7 @@ int main(int argc, char* argv[]) {
   ndnHelper.SetDefaultRoutes(true);
   ndnHelper.InstallAll();
 
-  ndn::StrategyChoiceHelper::InstallAll(::ndn::vsync::kSyncPrefix.toUri(),
+  ndn::StrategyChoiceHelper::InstallAll(::ndn::vsync::kSyncPrefix,
                                         "/localhost/nfd/strategy/multicast");
 
   Ptr<UniformRandomVariable> seed = CreateObject<UniformRandomVariable>();
@@ -107,13 +107,13 @@ int main(int argc, char* argv[]) {
     helper.SetAttribute("StopTime", TimeValue(Seconds(TotalRunTimeSeconds)));
     helper.Install(nodes.Get(i));
 
-    ndn::FibHelper::AddRoute(nodes.Get(0), ::ndn::vsync::kSyncPrefix.toUri(),
+    ndn::FibHelper::AddRoute(nodes.Get(0), ::ndn::vsync::kSyncPrefix,
                              nodes.Get(i), 1);
     std::string node_prefix = '/' + nid;
     ndn::FibHelper::AddRoute(nodes.Get(0), node_prefix, nodes.Get(i), 1);
 
     ndn::FibHelper::AddRoute(nodes.Get(i), "/", nodes.Get(0), 1);
-    ndn::FibHelper::AddRoute(nodes.Get(i), ::ndn::vsync::kSyncPrefix.toUri(),
+    ndn::FibHelper::AddRoute(nodes.Get(i), ::ndn::vsync::kSyncPrefix,
                              nodes.Get(0), 1);
 
     nodes.Get(i)->GetApplication(0)->TraceConnect(

@@ -50,7 +50,7 @@ int main(int argc, char* argv[]) {
   ndnHelper.SetDefaultRoutes(true);
   ndnHelper.InstallAll();
 
-  ndn::StrategyChoiceHelper::InstallAll(::ndn::vsync::kSyncPrefix.toUri(),
+  ndn::StrategyChoiceHelper::InstallAll(::ndn::vsync::kSyncPrefix,
                                         "/localhost/nfd/strategy/multicast");
 
   Ptr<UniformRandomVariable> seed = CreateObject<UniformRandomVariable>();
@@ -67,9 +67,9 @@ int main(int argc, char* argv[]) {
         "DataEvent", MakeCallback(&DataEvent));
   }
 
-  ndn::FibHelper::AddRoute(nodes.Get(0), ::ndn::vsync::kSyncPrefix.toUri(),
+  ndn::FibHelper::AddRoute(nodes.Get(0), ::ndn::vsync::kSyncPrefix,
                            nodes.Get(1), 1);
-  ndn::FibHelper::AddRoute(nodes.Get(1), ::ndn::vsync::kSyncPrefix.toUri(),
+  ndn::FibHelper::AddRoute(nodes.Get(1), ::ndn::vsync::kSyncPrefix,
                            nodes.Get(0), 1);
 
   Simulator::Stop(Seconds(3600.0));
