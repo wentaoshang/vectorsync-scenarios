@@ -49,13 +49,16 @@ static void ViewChange(std::string nid, const ::ndn::vsync::ViewID& vid,
 
 int main(int argc, char* argv[]) {
   Config::SetDefault("ns3::PointToPointNetDevice::DataRate",
-                     StringValue("10Mbps"));
+                     StringValue("100Mbps"));
   Config::SetDefault("ns3::PointToPointChannel::Delay", StringValue("10ms"));
   Config::SetDefault("ns3::DropTailQueue::MaxPackets", StringValue("100"));
+  Config::SetDefault("ns3::RateErrorModel::ErrorUnit",
+                     StringValue("ERROR_UNIT_PACKET"));
 
   int N = 10;
   double TotalRunTimeSeconds = 60.0;
   bool Synchronized = false;
+  double LossRate = 0.0;
 
   CommandLine cmd;
   cmd.AddValue("NumOfNodes", "Number of sync nodes in the group", N);
@@ -66,6 +69,7 @@ int main(int argc, char* argv[]) {
       "Synchronized",
       "If set, the data publishing events from all nodes are synchronized",
       Synchronized);
+  cmd.AddValue("LossRate", "Packet loss rate in the network", LossRate);
   cmd.Parse(argc, argv);
 
   NodeContainer nodes;
@@ -73,7 +77,14 @@ int main(int argc, char* argv[]) {
 
   // Node 0 is central hub
   PointToPointHelper p2p;
-  for (int i = 1; i <= N; ++i) p2p.Install(nodes.Get(0), nodes.Get(i));
+  Ptr<RateErrorModel> rem = CreateObject<RateErrorModel>();
+  rem->SetAttribute("ErrorRate", DoubleValue(LossRate));
+  rem->SetAttribute("ErrorUnit", StringValue("ERROR_UNIT_PACKET"));
+  for (int i = 1; i <= N; ++i) {
+    p2p.Install(nodes.Get(0), nodes.Get(i));
+    nodes.Get(i)->GetDevice(0)->SetAttribute("ReceiveErrorModel",
+                                             PointerValue(rem));
+  }
 
   ndn::StackHelper ndnHelper;
   ndnHelper.SetDefaultRoutes(true);
@@ -132,6 +143,8 @@ int main(int argc, char* argv[]) {
       });
   average_delay /= count;
 
+  std::cout << "Total number of data published is: " << delays.size()
+            << std::endl;
   std::cout << "Total number of data propagated is: " << count << std::endl;
   std::cout << "Average data propagation delay is: " << average_delay
             << " seconds." << std::endl;
