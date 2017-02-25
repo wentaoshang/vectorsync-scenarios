@@ -23,7 +23,7 @@ class SimpleNodeApp : public Application {
   typedef void (*VectorClockTraceCallback)(std::size_t,
                                            const ::ndn::vsync::VersionVector&);
   typedef void (*ViewChangeTraceCallback)(const ::ndn::vsync::ViewID&,
-                                          const ::ndn::vsync::ViewInfo&);
+                                          const ::ndn::vsync::ViewInfo&, bool);
   typedef void (*DataEventTraceCallback)(std::shared_ptr<const ndn::Data>,
                                          bool);
 
@@ -72,8 +72,8 @@ class SimpleNodeApp : public Application {
   }
 
   void TraceViewChange(const ::ndn::vsync::ViewID& vid,
-                       const ::ndn::vsync::ViewInfo& vinfo) {
-    view_change_trace_(vid, vinfo);
+                       const ::ndn::vsync::ViewInfo& vinfo, bool is_leader) {
+    view_change_trace_(vid, vinfo, is_leader);
   }
 
   void TraceDataEvent(std::shared_ptr<const ndn::Data> data, bool is_local) {
@@ -86,7 +86,8 @@ class SimpleNodeApp : public Application {
   std::string routing_prefix_;
   uint32_t seed_;
 
-  TracedCallback<const ::ndn::vsync::ViewID&, const ::ndn::vsync::ViewInfo&>
+  TracedCallback<const ::ndn::vsync::ViewID&, const ::ndn::vsync::ViewInfo&,
+                 bool>
       view_change_trace_;
   TracedCallback<std::size_t, const ::ndn::vsync::VersionVector&>
       vector_clock_trace_;

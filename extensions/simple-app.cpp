@@ -17,7 +17,7 @@ void SimpleNodeApp::StartApplication() {
   node_->ConnectVectorClockTrace(
       std::bind(&SimpleNodeApp::TraceVectorClock, this, _1, _2));
   node_->ConnectViewChangeTrace(
-      std::bind(&SimpleNodeApp::TraceViewChange, this, _1, _2));
+      std::bind(&SimpleNodeApp::TraceViewChange, this, _1, _2, _3));
   node_->ConnectDataEventTrace(
       std::bind(&SimpleNodeApp::TraceDataEvent, this, _1, _2));
   node_->Start();

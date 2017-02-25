@@ -42,9 +42,9 @@ static void VectorClockChange(std::string nid, std::size_t idx,
 }
 
 static void ViewChange(std::string nid, const ::ndn::vsync::ViewID& vid,
-                       const ::ndn::vsync::ViewInfo& vinfo) {
-  NS_LOG_INFO("node_id=\"" << nid << "\", view_id=" << vid
-                           << ", view_info=" << vinfo);
+                       const ::ndn::vsync::ViewInfo& vinfo, bool is_leader) {
+  NS_LOG_INFO("node_id=\"" << nid << "\", is_leader=" << (is_leader ? 'Y' : 'N')
+                           << ", view_id=" << vid << ", view_info=" << vinfo);
 }
 
 int main(int argc, char* argv[]) {
