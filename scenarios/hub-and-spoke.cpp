@@ -3,6 +3,7 @@
 #include "simple-app.hpp"
 
 #include <algorithm>
+#include <fstream>
 #include <iostream>
 #include <string>
 #include <unordered_map>
@@ -50,15 +51,15 @@ static void ViewChange(std::string nid, const ::ndn::vsync::ViewID& vid,
 int main(int argc, char* argv[]) {
   Config::SetDefault("ns3::PointToPointNetDevice::DataRate",
                      StringValue("100Mbps"));
-  Config::SetDefault("ns3::PointToPointChannel::Delay", StringValue("10ms"));
   Config::SetDefault("ns3::DropTailQueue::MaxPackets", StringValue("100"));
   Config::SetDefault("ns3::RateErrorModel::ErrorUnit",
                      StringValue("ERROR_UNIT_PACKET"));
 
   int N = 10;
-  double TotalRunTimeSeconds = 60.0;
+  double TotalRunTimeSeconds = 3600.0;
   bool Synchronized = false;
   double LossRate = 0.0;
+  std::string LinkDelay = "10ms";
 
   CommandLine cmd;
   cmd.AddValue("NumOfNodes", "Number of sync nodes in the group", N);
@@ -70,10 +71,13 @@ int main(int argc, char* argv[]) {
       "If set, the data publishing events from all nodes are synchronized",
       Synchronized);
   cmd.AddValue("LossRate", "Packet loss rate in the network", LossRate);
+  cmd.AddValue("LinkDelay", "Delay of the underlying P2P channel", LinkDelay);
   cmd.Parse(argc, argv);
 
   NodeContainer nodes;
   nodes.Create(N + 1);
+
+  Config::SetDefault("ns3::PointToPointChannel::Delay", StringValue(LinkDelay));
 
   // Node 0 is central hub
   PointToPointHelper p2p;
@@ -82,8 +86,9 @@ int main(int argc, char* argv[]) {
   rem->SetAttribute("ErrorUnit", StringValue("ERROR_UNIT_PACKET"));
   for (int i = 1; i <= N; ++i) {
     p2p.Install(nodes.Get(0), nodes.Get(i));
-    nodes.Get(i)->GetDevice(0)->SetAttribute("ReceiveErrorModel",
-                                             PointerValue(rem));
+    if (i % 2 == 0)  // Install error model on half of the sync nodes
+      nodes.Get(i)->GetDevice(0)->SetAttribute("ReceiveErrorModel",
+                                               PointerValue(rem));
   }
 
   ndn::StackHelper ndnHelper;
@@ -129,19 +134,27 @@ int main(int argc, char* argv[]) {
   Simulator::Run();
   Simulator::Destroy();
 
+  std::string file_name = "D" + LinkDelay + "N" + std::to_string(N);
+  if (Synchronized) file_name += "Sync";
+  if (LossRate > 0.0) file_name += "LR" + std::to_string(LossRate);
+  std::fstream fs(file_name, std::ios_base::out | std::ios_base::trunc);
+
   int count = 0;
   double average_delay = std::accumulate(
       delays.begin(), delays.end(), 0.0,
-      [&count](double a, const decltype(delays)::value_type& b) {
+      [&count, &fs](double a, const decltype(delays)::value_type& b) {
         double gen_time = b.second.first;
         const auto& vec = b.second.second;
         count += vec.size();
         return a + std::accumulate(vec.begin(), vec.end(), 0.0,
-                                   [gen_time](double c, double d) {
+                                   [gen_time, &fs](double c, double d) {
+                                     fs << (d - gen_time) << std::endl;
                                      return c + d - gen_time;
                                    });
       });
   average_delay /= count;
+
+  fs.close();
 
   std::cout << "Total number of data published is: " << delays.size()
             << std::endl;
