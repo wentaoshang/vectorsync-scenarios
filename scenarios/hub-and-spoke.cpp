@@ -60,7 +60,7 @@ int main(int argc, char* argv[]) {
   bool Synchronized = false;
   double LossRate = 0.0;
   std::string LinkDelay = "10ms";
-  double ViewChangeRate = 0.0;
+  int LeavingNodes = 0;
 
   CommandLine cmd;
   cmd.AddValue("NumOfNodes", "Number of sync nodes in the group", N);
@@ -73,9 +73,9 @@ int main(int argc, char* argv[]) {
       Synchronized);
   cmd.AddValue("LossRate", "Packet loss rate in the network", LossRate);
   cmd.AddValue("LinkDelay", "Delay of the underlying P2P channel", LinkDelay);
-  cmd.AddValue("ViewChangeRate",
-               "Probability of a node randomly leaving the group after 20s",
-               ViewChangeRate);
+  cmd.AddValue("LeavingNodes",
+               "Number of nodes randomly leaving the group after 20s",
+               LeavingNodes);
   cmd.Parse(argc, argv);
 
   if (TotalRunTimeSeconds < 20.0) return -1;
@@ -108,7 +108,6 @@ int main(int argc, char* argv[]) {
   seed->SetAttribute("Min", DoubleValue(0.0));
   seed->SetAttribute("Max", DoubleValue(1000.0));
 
-  Ptr<UniformRandomVariable> flip_coin = CreateObject<UniformRandomVariable>();
   Ptr<UniformRandomVariable> stop_time = CreateObject<UniformRandomVariable>();
   stop_time->SetAttribute("Min", DoubleValue(20.0));
   stop_time->SetAttribute("Max", DoubleValue(TotalRunTimeSeconds));
@@ -120,7 +119,7 @@ int main(int argc, char* argv[]) {
     if (!Synchronized)
       helper.SetAttribute("RandomSeed", UintegerValue(seed->GetInteger()));
     helper.SetAttribute("StartTime", TimeValue(Seconds(1.0)));
-    if (flip_coin->GetValue() < ViewChangeRate)
+    if (i <= LeavingNodes)
       helper.SetAttribute("StopTime",
                           TimeValue(Seconds(stop_time->GetValue())));
     else
@@ -152,7 +151,7 @@ int main(int argc, char* argv[]) {
   std::string file_name = "D" + LinkDelay + "N" + std::to_string(N);
   if (Synchronized) file_name += "Sync";
   if (LossRate > 0.0) file_name += "LR" + std::to_string(LossRate);
-  if (ViewChangeRate > 0.0) file_name += "VCR" + std::to_string(ViewChangeRate);
+  if (LeavingNodes > 0) file_name += "LN" + std::to_string(LeavingNodes);
   std::fstream fs(file_name, std::ios_base::out | std::ios_base::trunc);
 
   int count = 0;
