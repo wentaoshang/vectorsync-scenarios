@@ -34,17 +34,37 @@ static void DataEvent(std::shared_ptr<const ndn::Data> data, bool is_local) {
 int main(int argc, char* argv[]) {
   Config::SetDefault("ns3::PointToPointNetDevice::DataRate",
                      StringValue("10Mbps"));
-  Config::SetDefault("ns3::PointToPointChannel::Delay", StringValue("10ms"));
   Config::SetDefault("ns3::DropTailQueue::MaxPackets", StringValue("100"));
 
+  double TotalRunTimeSeconds = 3600.0;
+  bool Synchronized = false;
+  double LossRate = 0.0;
+  std::string LinkDelay = "10ms";
+
   CommandLine cmd;
+  cmd.AddValue("TotalRunTimeSeconds",
+               "Total running time of the simulation in seconds (> 20)",
+               TotalRunTimeSeconds);
+  cmd.AddValue(
+      "Synchronized",
+      "If set, the data publishing events from all nodes are synchronized",
+      Synchronized);
+  cmd.AddValue("LossRate", "Packet loss rate in the network", LossRate);
+  cmd.AddValue("LinkDelay", "Delay of the underlying P2P channel", LinkDelay);
   cmd.Parse(argc, argv);
 
   NodeContainer nodes;
   nodes.Create(2);
 
+  Config::SetDefault("ns3::PointToPointChannel::Delay", StringValue(LinkDelay));
+
   PointToPointHelper p2p;
+  Ptr<RateErrorModel> rem = CreateObject<RateErrorModel>();
+  rem->SetAttribute("ErrorRate", DoubleValue(LossRate));
+  rem->SetAttribute("ErrorUnit", StringValue("ERROR_UNIT_PACKET"));
   p2p.Install(nodes.Get(0), nodes.Get(1));
+  nodes.Get(0)->GetDevice(0)->SetAttribute("ReceiveErrorModel",
+                                           PointerValue(rem));
 
   ndn::StackHelper ndnHelper;
   ndnHelper.SetDefaultRoutes(true);
@@ -61,7 +81,8 @@ int main(int argc, char* argv[]) {
     ndn::AppHelper helper("ns3::ndn::vsync::SimpleNodeApp");
     helper.SetAttribute(
         "NodeID", StringValue("N" + std::to_string(nodes.Get(i)->GetId())));
-    helper.SetAttribute("RandomSeed", UintegerValue(seed->GetInteger()));
+    if (!Synchronized)
+      helper.SetAttribute("RandomSeed", UintegerValue(seed->GetInteger()));
     helper.Install(nodes.Get(i)).Start(Seconds(1.0));
     nodes.Get(i)->GetApplication(0)->TraceConnectWithoutContext(
         "DataEvent", MakeCallback(&DataEvent));
@@ -72,7 +93,7 @@ int main(int argc, char* argv[]) {
   ndn::FibHelper::AddRoute(nodes.Get(1), ::ndn::vsync::kSyncPrefix,
                            nodes.Get(0), 1);
 
-  Simulator::Stop(Seconds(3600.0));
+  Simulator::Stop(Seconds(TotalRunTimeSeconds));
 
   Simulator::Run();
   Simulator::Destroy();
