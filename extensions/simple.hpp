@@ -26,8 +26,7 @@ class SimpleNode {
         node_(face_, scheduler_, key_chain_, nid, prefix, seed),
         rengine_(seed),
         rdist_(500, 10000) {
-    node_.ConnectDataSignal(
-        std::bind(&SimpleNode::OnData, this, _1, _2, _3, _4));
+    node_.ConnectDataSignal(std::bind(&SimpleNode::OnData, this, _1));
   }
 
   void Start() {
@@ -51,15 +50,12 @@ class SimpleNode {
   }
 
  private:
-  void OnData(std::shared_ptr<const Data> data, const std::string& content,
-              const ViewID& vi, const VersionVector& vv) {
+  void OnData(std::shared_ptr<const Data> data) {
     data_event_trace_(data, false);
   }
 
   void PublishData() {
-    std::shared_ptr<const Data> data;
-    std::tie(data, std::ignore, std::ignore) =
-        node_.PublishData("Hello from " + node_.GetNodeID());
+    auto data = node_.PublishData("Hello from " + node_.GetNodeID());
     data_event_trace_(data, true);
     scheduler_.scheduleEvent(time::milliseconds(rdist_(rengine_)),
                              [this] { PublishData(); });
