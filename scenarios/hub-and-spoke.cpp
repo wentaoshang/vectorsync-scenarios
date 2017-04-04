@@ -92,9 +92,8 @@ int main(int argc, char* argv[]) {
   rem->SetAttribute("ErrorUnit", StringValue("ERROR_UNIT_PACKET"));
   for (int i = 1; i <= N; ++i) {
     p2p.Install(nodes.Get(0), nodes.Get(i));
-    if (i % 2 == 0)  // Install error model on half of the sync nodes
-      nodes.Get(i)->GetDevice(0)->SetAttribute("ReceiveErrorModel",
-                                               PointerValue(rem));
+    nodes.Get(i)->GetDevice(0)->SetAttribute("ReceiveErrorModel",
+                                             PointerValue(rem));
   }
 
   ndn::StackHelper ndnHelper;
