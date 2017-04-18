@@ -1,0 +1,94 @@
+# small campus topology
+
+router
+
+# node  comment yPos xPos
+bb1	NA	0    0
+bb2	NA	0    0
+dr1	NA	0    0
+dr2	NA	0    0
+dr3	NA	0    0
+dr4	NA	0    0
+gw1	NA	0    0
+gw2	NA	0    0
+gw3	NA	0    0
+gw4	NA	0    0
+gw5	NA	0    0
+gw6	NA	0    0
+gw7	NA	0    0
+n1	NA	0    0
+n2	NA	0    0
+n3	NA	0    0
+n4	NA	0    0
+n5	NA	0    0
+n6	NA	0    0
+n7	NA	0    0
+n8	NA	0    0
+n9	NA	0    0
+n10	NA	0    0
+
+
+link
+
+# srcNode   dstNode     bandwidth   metric  delay   queue
+# bandwidth: link bandwidth
+# metric: routing metric
+# delay:  link delay
+# queue:  MaxPackets for transmission queue on the link (both directions)
+bb1	  bb2	     10Gbps	      1	    5ms	   1000
+bb2	  bb1	     10Gbps	      1	    5ms	   1000
+#
+bb1	  dr1	     1Gbps	      1	    10ms   500
+dr1	  bb1	     1Gbps	      1	    10ms   500
+bb1	  dr2	     1Gbps	      1	    10ms   500
+dr2	  bb1	     1Gbps	      1	    10ms   500
+bb1	  dr4	     1Gbps	      1	    10ms   500
+dr4	  bb1	     1Gbps	      1	    10ms   500
+bb2	  dr2	     1Gbps	      1	    10ms   500
+dr2	  bb2	     1Gbps	      1	    10ms   500
+bb2	  dr3	     1Gbps	      1	    10ms   500
+dr3	  bb2	     1Gbps	      1	    10ms   500
+#
+dr1	  gw1	     1Gbps	      1	    5ms   100
+gw1	  dr1	     1Gbps	      1	    5ms   100
+dr1	  gw2	     1Gbps	      1	    5ms   100
+gw2	  dr1	     1Gbps	      1	    5ms   100
+dr2	  gw3	     1Gbps	      1	    5ms   100
+dr2	  gw4	     1Gbps	      1	    5ms   100
+dr2	  gw5	     1Gbps	      1	    5ms   100
+gw3	  dr2	     1Gbps	      1	    5ms   100
+gw4	  dr2	     1Gbps	      1	    5ms   100
+gw5	  dr2	     1Gbps	      1	    5ms   100
+dr3	  gw6	     1Gbps	      1	    5ms   100
+dr3	  gw7	     1Gbps	      1	    5ms   100
+gw6	  dr3	     1Gbps	      1	    5ms   100
+gw7	  dr3	     1Gbps	      1	    5ms   100
+dr4	  gw6	     1Gbps	      1	    5ms   100
+dr4	  gw7	     1Gbps	      1	    5ms   100
+gw6	  dr4	     1Gbps	      1	    5ms   100
+gw7	  dr4	     1Gbps	      1	    5ms   100
+#
+n1	gw1	100Mbps	1	2ms	100
+gw1	n1	100Mbps	1	2ms	100
+n2	gw1	100Mbps	1	2ms	100
+gw1	n2	100Mbps	1	2ms	100
+n2	gw2	100Mbps	1	2ms	100
+gw2	n2	100Mbps	1	2ms	100
+n3	gw3	100Mbps	1	2ms	100
+gw3	n3	100Mbps	1	2ms	100
+n4	gw4	100Mbps	1	2ms	100
+gw4	n4	100Mbps	1	2ms	100
+n5	gw4	100Mbps	1	2ms	100
+n5	gw5	100Mbps	1	2ms	100
+gw4	n5	100Mbps	1	2ms	100
+gw5	n5	100Mbps	1	2ms	100
+n6	gw5	100Mbps	1	2ms	100
+gw5	n6	100Mbps	1	2ms	100
+n7	gw6	100Mbps	1	2ms	100
+gw6	n7	100Mbps	1	2ms	100
+n8	gw6	100Mbps	1	2ms	100
+gw6	n8	100Mbps	1	2ms	100
+n9	gw7	100Mbps	1	2ms	100
+gw7	n9	100Mbps	1	2ms	100
+n10	gw7	100Mbps	1	2ms	100
+gw7	n10	100Mbps	1	2ms	100
