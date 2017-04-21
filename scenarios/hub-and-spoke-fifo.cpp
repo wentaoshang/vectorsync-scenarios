@@ -147,7 +147,7 @@ int main(int argc, char* argv[]) {
   Simulator::Run();
   Simulator::Destroy();
 
-  std::string file_name = "D" + LinkDelay + "N" + std::to_string(N);
+  std::string file_name = "HASFIFO-D" + LinkDelay + "N" + std::to_string(N);
   if (Synchronized) file_name += "Sync";
   if (LossRate > 0.0) file_name += "LR" + std::to_string(LossRate);
   if (LeavingNodes > 0) file_name += "LN" + std::to_string(LeavingNodes);

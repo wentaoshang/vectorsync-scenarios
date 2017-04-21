@@ -55,7 +55,7 @@ class SimpleFIFONode {
   }
 
   void PublishData() {
-    auto data = node_.PublishData("Hello from " + node_.GetNodeID());
+    auto data = node_.PublishFIFOData("Hello from " + node_.GetNodeID());
     data_event_trace_(data, true);
     scheduler_.scheduleEvent(time::milliseconds(rdist_(rengine_)),
                              [this] { PublishData(); });
