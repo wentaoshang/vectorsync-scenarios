@@ -59,6 +59,7 @@ int main(int argc, char* argv[]) {
   double TotalRunTimeSeconds = 3600.0;
   bool Synchronized = false;
   double LossRate = 0.0;
+  bool LossyMode = false;
   std::string LinkDelay = "10ms";
   int LeavingNodes = 0;
 
@@ -72,6 +73,8 @@ int main(int argc, char* argv[]) {
       "If set, the data publishing events from all nodes are synchronized",
       Synchronized);
   cmd.AddValue("LossRate", "Packet loss rate in the network", LossRate);
+  cmd.AddValue("LossyMode", "If set, the sync nodes will enable lossy mode",
+               LossyMode);
   cmd.AddValue("LinkDelay", "Delay of the underlying P2P channel", LinkDelay);
   cmd.AddValue("LeavingNodes",
                "Number of nodes randomly leaving the group after 20s",
@@ -115,7 +118,7 @@ int main(int argc, char* argv[]) {
     ndn::AppHelper helper("ns3::ndn::vsync::SimpleNodeApp");
     std::string nid = 'N' + std::to_string(i);
     helper.SetAttribute("NodeID", StringValue(nid));
-    if (LossRate > 0) helper.SetAttribute("LossyMode", BooleanValue(true));
+    if (LossyMode) helper.SetAttribute("LossyMode", BooleanValue(true));
     if (!Synchronized)
       helper.SetAttribute("RandomSeed", UintegerValue(seed->GetInteger()));
     helper.SetAttribute("StartTime", TimeValue(Seconds(1.0)));
@@ -148,8 +151,9 @@ int main(int argc, char* argv[]) {
   Simulator::Run();
   Simulator::Destroy();
 
-  std::string file_name = "D" + LinkDelay + "N" + std::to_string(N);
+  std::string file_name = "results/D" + LinkDelay + "N" + std::to_string(N);
   if (Synchronized) file_name += "Sync";
+  if (LossyMode) file_name += "LM";
   if (LossRate > 0.0) file_name += "LR" + std::to_string(LossRate);
   if (LeavingNodes > 0) file_name += "LN" + std::to_string(LeavingNodes);
   std::fstream fs(file_name, std::ios_base::out | std::ios_base::trunc);
