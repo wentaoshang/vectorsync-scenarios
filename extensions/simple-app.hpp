@@ -6,6 +6,7 @@
 #include <limits>
 
 #include "ns3/application.h"
+#include "ns3/boolean.h"
 #include "ns3/ndnSIM/helper/ndn-stack-helper.hpp"
 #include "ns3/string.h"
 #include "ns3/trace-source-accessor.h"
@@ -44,6 +45,11 @@ class SimpleNodeApp : public Application {
                 "RandomSeed", "Seed used for the random number generator.",
                 UintegerValue(0), MakeUintegerAccessor(&SimpleNodeApp::seed_),
                 MakeUintegerChecker<uint32_t>())
+            .AddAttribute("LossyMode",
+                          "Whether VectorSync operates in lossy mode.",
+                          BooleanValue(false),
+                          MakeBooleanAccessor(&SimpleNodeApp::lossy_mode_),
+                          MakeBooleanChecker())
             .AddTraceSource(
                 "VectorClock", "Vector clock of the sync node.",
                 MakeTraceSourceAccessor(&SimpleNodeApp::vector_clock_trace_),
@@ -85,6 +91,7 @@ class SimpleNodeApp : public Application {
   std::string node_id_;
   std::string routing_prefix_;
   uint32_t seed_;
+  bool lossy_mode_;
 
   TracedCallback<const ::ndn::vsync::ViewID&, const ::ndn::vsync::ViewInfo&,
                  bool>

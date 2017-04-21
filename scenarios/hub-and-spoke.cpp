@@ -115,6 +115,7 @@ int main(int argc, char* argv[]) {
     ndn::AppHelper helper("ns3::ndn::vsync::SimpleNodeApp");
     std::string nid = 'N' + std::to_string(i);
     helper.SetAttribute("NodeID", StringValue(nid));
+    if (LossRate > 0) helper.SetAttribute("LossyMode", BooleanValue(true));
     if (!Synchronized)
       helper.SetAttribute("RandomSeed", UintegerValue(seed->GetInteger()));
     helper.SetAttribute("StartTime", TimeValue(Seconds(1.0)));
