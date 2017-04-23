@@ -50,6 +50,12 @@ class SimpleNodeApp : public Application {
                           BooleanValue(false),
                           MakeBooleanAccessor(&SimpleNodeApp::lossy_mode_),
                           MakeBooleanChecker())
+            .AddAttribute(
+                "MaxDataInterval",
+                "Maximum data publishing interval for the sync node.",
+                UintegerValue(10000),
+                MakeUintegerAccessor(&SimpleNodeApp::max_data_interval_),
+                MakeUintegerChecker<uint32_t>())
             .AddTraceSource(
                 "VectorClock", "Vector clock of the sync node.",
                 MakeTraceSourceAccessor(&SimpleNodeApp::vector_clock_trace_),
@@ -92,6 +98,7 @@ class SimpleNodeApp : public Application {
   std::string routing_prefix_;
   uint32_t seed_;
   bool lossy_mode_;
+  uint32_t max_data_interval_;
 
   TracedCallback<const ::ndn::vsync::ViewID&, const ::ndn::vsync::ViewInfo&,
                  bool>

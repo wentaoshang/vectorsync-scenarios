@@ -62,6 +62,7 @@ int main(int argc, char* argv[]) {
   bool LossyMode = false;
   std::string LinkDelay = "10ms";
   int LeavingNodes = 0;
+  uint32_t MaxDataIntervalMS = 10000;
 
   CommandLine cmd;
   cmd.AddValue("NumOfNodes", "Number of sync nodes in the group", N);
@@ -79,6 +80,9 @@ int main(int argc, char* argv[]) {
   cmd.AddValue("LeavingNodes",
                "Number of nodes randomly leaving the group after 20s",
                LeavingNodes);
+  cmd.AddValue("MaxDataIntervalMS",
+               "Maximum number of data publishing interval in milliseconds",
+               MaxDataIntervalMS);
   cmd.Parse(argc, argv);
 
   if (TotalRunTimeSeconds < 20.0) return -1;
@@ -121,6 +125,7 @@ int main(int argc, char* argv[]) {
     if (LossyMode) helper.SetAttribute("LossyMode", BooleanValue(true));
     if (!Synchronized)
       helper.SetAttribute("RandomSeed", UintegerValue(seed->GetInteger()));
+    helper.SetAttribute("MaxDataInterval", UintegerValue(MaxDataIntervalMS));
     helper.SetAttribute("StartTime", TimeValue(Seconds(1.0)));
     if (i <= LeavingNodes)
       helper.SetAttribute("StopTime",

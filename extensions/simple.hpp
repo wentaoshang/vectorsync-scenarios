@@ -20,12 +20,12 @@ class SimpleNode {
       std::function<void(std::shared_ptr<const Data>, bool)>;
 
   SimpleNode(const NodeID& nid, const Name& prefix, KeyChain& keychain,
-             uint32_t seed, bool lossy_mode)
+             uint32_t seed, bool lossy_mode, uint32_t max_data_interval)
       : scheduler_(face_.getIoService()),
         key_chain_(keychain),
         node_(face_, scheduler_, key_chain_, nid, prefix, seed),
         rengine_(seed),
-        rdist_(500, 10000) {
+        rdist_(500, max_data_interval) {
     node_.ConnectDataSignal(std::bind(&SimpleNode::OnData, this, _1));
     if (lossy_mode) node_.EnableLossyMode();
   }
