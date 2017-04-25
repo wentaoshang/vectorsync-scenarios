@@ -157,6 +157,8 @@ int main(int argc, char* argv[]) {
   Simulator::Destroy();
 
   std::string file_name = "results/D" + LinkDelay + "N" + std::to_string(N);
+  if (MaxDataIntervalMS != 10000)
+    file_name += "MDI" + std::to_string(MaxDataIntervalMS);
   if (Synchronized) file_name += "Sync";
   if (LossyMode) file_name += "LM";
   if (LossRate > 0.0) file_name += "LR" + std::to_string(LossRate);
