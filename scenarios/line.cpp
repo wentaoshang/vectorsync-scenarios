@@ -130,7 +130,7 @@ int main(int argc, char* argv[]) {
   Simulator::Run();
   Simulator::Destroy();
 
-  std::string file_name = "LineD" + LinkDelay + "N" + std::to_string(N);
+  std::string file_name = "results/LineD" + LinkDelay + "N" + std::to_string(N);
   if (Synchronized) file_name += "Sync";
   std::fstream fs(file_name, std::ios_base::out | std::ios_base::trunc);
 
