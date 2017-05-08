@@ -39,12 +39,17 @@ static void DataEvent(std::string nid, std::shared_ptr<const ndn::Data> data,
 int main(int argc, char* argv[]) {
   double TotalRunTimeSeconds = 3600.0;
   double LossRate = 0.0;
+  bool Synchronized = false;
 
   CommandLine cmd;
   cmd.AddValue("TotalRunTimeSeconds",
                "Total running time of the simulation in seconds (> 20)",
                TotalRunTimeSeconds);
   cmd.AddValue("LossRate", "Packet loss rate in the network", LossRate);
+  cmd.AddValue(
+      "Synchronized",
+      "If set, the data publishing events from all nodes are synchronized",
+      Synchronized);
   cmd.Parse(argc, argv);
 
   if (TotalRunTimeSeconds < 20.0) return -1;
@@ -82,7 +87,8 @@ int main(int argc, char* argv[]) {
     helper.SetAttribute("NodeID", StringValue(nid));
     helper.SetAttribute("StartTime", TimeValue(Seconds(1.0)));
     helper.SetAttribute("StopTime", TimeValue(Seconds(TotalRunTimeSeconds)));
-    helper.SetAttribute("RandomSeed", UintegerValue(seed->GetInteger()));
+    if (!Synchronized)
+      helper.SetAttribute("RandomSeed", UintegerValue(seed->GetInteger()));
     helper.Install(node);
 
     ndnGlobalRoutingHelper.AddOrigins('/' + nid, node);
@@ -102,6 +108,7 @@ int main(int argc, char* argv[]) {
 
   std::string file_name =
       "results/VS-CampusRunTime" + std::to_string(TotalRunTimeSeconds);
+  if (Synchronized) file_name += "Sync";
   if (LossRate > 0.0) file_name += "LR" + std::to_string(LossRate);
   std::fstream fs(file_name, std::ios_base::out | std::ios_base::trunc);
 
