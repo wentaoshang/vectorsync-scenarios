@@ -37,15 +37,18 @@ static void DataEvent(std::string nid, std::shared_ptr<const ndn::Data> data,
 }
 
 int main(int argc, char* argv[]) {
-  double TotalRunTimeSeconds = 3600.0;
+  double TotalRunTimeSeconds = 600.0;
   double LossRate = 0.0;
   bool Synchronized = false;
+  bool LossyMode = false;
 
   CommandLine cmd;
   cmd.AddValue("TotalRunTimeSeconds",
                "Total running time of the simulation in seconds (> 20)",
                TotalRunTimeSeconds);
   cmd.AddValue("LossRate", "Packet loss rate in the network", LossRate);
+  cmd.AddValue("LossyMode", "If set, the sync nodes will enable lossy mode",
+               LossyMode);
   cmd.AddValue(
       "Synchronized",
       "If set, the data publishing events from all nodes are synchronized",
@@ -87,6 +90,7 @@ int main(int argc, char* argv[]) {
     helper.SetAttribute("NodeID", StringValue(nid));
     helper.SetAttribute("StartTime", TimeValue(Seconds(1.0)));
     helper.SetAttribute("StopTime", TimeValue(Seconds(TotalRunTimeSeconds)));
+    if (LossyMode) helper.SetAttribute("LossyMode", BooleanValue(true));
     if (!Synchronized)
       helper.SetAttribute("RandomSeed", UintegerValue(seed->GetInteger()));
     helper.Install(node);
@@ -110,6 +114,7 @@ int main(int argc, char* argv[]) {
       "results/VS-CampusRunTime" + std::to_string(TotalRunTimeSeconds);
   if (Synchronized) file_name += "Sync";
   if (LossRate > 0.0) file_name += "LR" + std::to_string(LossRate);
+  if (LossyMode) file_name += "LM";
   std::fstream fs(file_name, std::ios_base::out | std::ios_base::trunc);
 
   int count = 0;
