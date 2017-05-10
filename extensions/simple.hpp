@@ -5,6 +5,7 @@
 
 #include <functional>
 #include <random>
+#include <stdexcept>
 
 #include "node.hpp"
 
@@ -30,7 +31,19 @@ class SimpleNode {
     if (lossy_mode) node_.EnableLossyMode();
   }
 
+  void SetViewInfo(const ViewInfo& vinfo) {
+    if (vinfo.Size() == 0) return;
+    auto nid = node_.GetNodeID();
+    if (!vinfo.GetIndexByID(nid).second)
+      throw std::invalid_argument("Cannot load ViewInfo at node " + nid);
+
+    // Use first node as leader
+    NodeID leader = vinfo.GetIDByIndex(0).first;
+    node_.SetViewInfo({4, leader}, vinfo);
+  }
+
   void Start() {
+    node_.Start();
     // Wait for 8 seconds before publishing the first data packet.
     // This allows the view change process to stablize.
     scheduler_.scheduleEvent(time::milliseconds(8000 + rdist_(rengine_)),

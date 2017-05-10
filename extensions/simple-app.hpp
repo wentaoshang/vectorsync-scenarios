@@ -41,6 +41,10 @@ class SimpleNodeApp : public Application {
                           StringValue("/"),
                           MakeStringAccessor(&SimpleNodeApp::routing_prefix_),
                           MakeStringChecker())
+            .AddAttribute("ViewInfo", "Serialized protobuf for the ViewInfo.",
+                          StringValue(""),
+                          MakeStringAccessor(&SimpleNodeApp::vinfo_proto_),
+                          MakeStringChecker())
             .AddAttribute(
                 "RandomSeed", "Seed used for the random number generator.",
                 UintegerValue(0), MakeUintegerAccessor(&SimpleNodeApp::seed_),
@@ -99,6 +103,8 @@ class SimpleNodeApp : public Application {
   uint32_t seed_;
   bool lossy_mode_;
   uint32_t max_data_interval_;
+
+  std::string vinfo_proto_;
 
   TracedCallback<const ::ndn::vsync::ViewID&, const ::ndn::vsync::ViewInfo&,
                  bool>

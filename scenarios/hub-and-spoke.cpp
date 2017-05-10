@@ -56,11 +56,11 @@ int main(int argc, char* argv[]) {
                      StringValue("ERROR_UNIT_PACKET"));
 
   int N = 10;
-  double TotalRunTimeSeconds = 3600.0;
+  double TotalRunTimeSeconds = 600.0;
   bool Synchronized = false;
   double LossRate = 0.0;
   bool LossyMode = false;
-  std::string LinkDelay = "10ms";
+  std::string LinkDelay = "100ms";
   int LeavingNodes = 0;
   uint32_t MaxDataIntervalMS = 10000;
 
@@ -118,10 +118,20 @@ int main(int argc, char* argv[]) {
   stop_time->SetAttribute("Min", DoubleValue(20.0));
   stop_time->SetAttribute("Max", DoubleValue(TotalRunTimeSeconds));
 
+  std::vector<::ndn::vsync::MemberInfo> mlist;
+  for (int i = 1; i <= N; ++i) {
+    std::string nid = 'N' + std::to_string(i);
+    mlist.push_back({nid, "/"});
+  }
+  ::ndn::vsync::ViewInfo vinfo(mlist);
+  std::string vinfo_proto;
+  vinfo.Encode(vinfo_proto);
+
   for (int i = 1; i <= N; ++i) {
     ndn::AppHelper helper("ns3::ndn::vsync::SimpleNodeApp");
     std::string nid = 'N' + std::to_string(i);
     helper.SetAttribute("NodeID", StringValue(nid));
+    helper.SetAttribute("ViewInfo", StringValue(vinfo_proto));
     if (LossyMode) helper.SetAttribute("LossyMode", BooleanValue(true));
     if (!Synchronized)
       helper.SetAttribute("RandomSeed", UintegerValue(seed->GetInteger()));
