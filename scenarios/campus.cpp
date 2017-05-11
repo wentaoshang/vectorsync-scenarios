@@ -82,12 +82,22 @@ int main(int argc, char* argv[]) {
   rem->SetAttribute("ErrorRate", DoubleValue(LossRate));
   rem->SetAttribute("ErrorUnit", StringValue("ERROR_UNIT_PACKET"));
 
+  std::vector<::ndn::vsync::MemberInfo> mlist;
+  for (int i = 1; i <= 10; ++i) {
+    std::string nid = 'n' + std::to_string(i);
+    mlist.push_back({nid, "/"});
+  }
+  ::ndn::vsync::ViewInfo vinfo(mlist);
+  std::string vinfo_proto;
+  vinfo.Encode(vinfo_proto);
+
   for (int i = 1; i <= 10; ++i) {
     std::string nid = "n" + std::to_string(i);
     Ptr<Node> node = Names::Find<Node>(nid);
 
     ndn::AppHelper helper("ns3::ndn::vsync::SimpleNodeApp");
     helper.SetAttribute("NodeID", StringValue(nid));
+    helper.SetAttribute("ViewInfo", StringValue(vinfo_proto));
     helper.SetAttribute("StartTime", TimeValue(Seconds(1.0)));
     helper.SetAttribute("StopTime", TimeValue(Seconds(TotalRunTimeSeconds)));
     if (LossyMode) helper.SetAttribute("LossyMode", BooleanValue(true));
@@ -106,6 +116,9 @@ int main(int argc, char* argv[]) {
   ndn::GlobalRoutingHelper::CalculateRoutes();
 
   Simulator::Stop(Seconds(TotalRunTimeSeconds));
+
+  ndn::L3RateTracer::InstallAll("campus-rate-trace.txt",
+                                Seconds(TotalRunTimeSeconds - 0.5));
 
   Simulator::Run();
   Simulator::Destroy();

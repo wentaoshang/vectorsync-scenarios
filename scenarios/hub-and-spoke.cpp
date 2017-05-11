@@ -163,6 +163,9 @@ int main(int argc, char* argv[]) {
 
   Simulator::Stop(Seconds(TotalRunTimeSeconds));
 
+  ndn::L3RateTracer::InstallAll("rate-trace.txt",
+                                Seconds(TotalRunTimeSeconds - 0.5));
+
   Simulator::Run();
   Simulator::Destroy();
 
