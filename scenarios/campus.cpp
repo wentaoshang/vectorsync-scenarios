@@ -37,14 +37,15 @@ static void DataEvent(std::string nid, std::shared_ptr<const ndn::Data> data,
 }
 
 int main(int argc, char* argv[]) {
-  double TotalRunTimeSeconds = 600.0;
+  double TotalRunTimeSeconds = 100.0;
   double LossRate = 0.0;
   bool Synchronized = false;
   bool LossyMode = false;
+  double DataRate = 1.0;
 
   CommandLine cmd;
   cmd.AddValue("TotalRunTimeSeconds",
-               "Total running time of the simulation in seconds (> 20)",
+               "Total running time of the simulation in seconds",
                TotalRunTimeSeconds);
   cmd.AddValue("LossRate", "Packet loss rate in the network", LossRate);
   cmd.AddValue("LossyMode", "If set, the sync nodes will enable lossy mode",
@@ -53,9 +54,9 @@ int main(int argc, char* argv[]) {
       "Synchronized",
       "If set, the data publishing events from all nodes are synchronized",
       Synchronized);
+  cmd.AddValue("DataRate", "Data publishing rate (packets per second)",
+               DataRate);
   cmd.Parse(argc, argv);
-
-  if (TotalRunTimeSeconds < 20.0) return -1;
 
   AnnotatedTopologyReader topologyReader("", 25);
   topologyReader.SetFileName("topologies/campus.txt");
@@ -100,6 +101,7 @@ int main(int argc, char* argv[]) {
     helper.SetAttribute("ViewInfo", StringValue(vinfo_proto));
     helper.SetAttribute("StartTime", TimeValue(Seconds(1.0)));
     helper.SetAttribute("StopTime", TimeValue(Seconds(TotalRunTimeSeconds)));
+    helper.SetAttribute("DataRate", DoubleValue(DataRate));
     if (LossyMode) helper.SetAttribute("LossyMode", BooleanValue(true));
     if (!Synchronized)
       helper.SetAttribute("RandomSeed", UintegerValue(seed->GetInteger()));

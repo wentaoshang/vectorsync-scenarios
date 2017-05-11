@@ -14,7 +14,7 @@ void SimpleNodeApp::StartApplication() {
   NS_LOG_INFO("NodeID: " << node_id_ << " Seed: " << seed_);
   node_.reset(new ::ndn::vsync::app::SimpleNode(
       node_id_, routing_prefix_, ndn::StackHelper::getKeyChain(), seed_,
-      lossy_mode_, max_data_interval_));
+      lossy_mode_, data_rate_));
 
   if (!vinfo_proto_.empty()) {
     ::ndn::vsync::ViewInfo vinfo;

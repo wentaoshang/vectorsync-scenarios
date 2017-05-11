@@ -21,12 +21,12 @@ class SimpleNode {
       std::function<void(std::shared_ptr<const Data>, bool)>;
 
   SimpleNode(const NodeID& nid, const Name& prefix, KeyChain& keychain,
-             uint32_t seed, bool lossy_mode, uint32_t max_data_interval)
+             uint32_t seed, bool lossy_mode, double data_rate)
       : scheduler_(face_.getIoService()),
         key_chain_(keychain),
         node_(face_, scheduler_, key_chain_, nid, prefix, seed),
         rengine_(seed),
-        rdist_(500, max_data_interval) {
+        rdist_(data_rate) {
     node_.ConnectDataSignal(std::bind(&SimpleNode::OnData, this, _1));
     if (lossy_mode) node_.EnableLossyMode();
   }
@@ -44,8 +44,9 @@ class SimpleNode {
 
   void Start() {
     node_.Start();
-    scheduler_.scheduleEvent(time::milliseconds(1000 + rdist_(rengine_)),
-                             [this] { PublishData(); });
+    scheduler_.scheduleEvent(
+        time::milliseconds(static_cast<int>(1000.0 * rdist_(rengine_))),
+        [this] { PublishData(); });
     face_.processEvents();
   }
 
@@ -69,8 +70,9 @@ class SimpleNode {
   void PublishData() {
     auto data = node_.PublishData("Hello from " + node_.GetNodeID());
     data_event_trace_(data, true);
-    scheduler_.scheduleEvent(time::milliseconds(rdist_(rengine_)),
-                             [this] { PublishData(); });
+    scheduler_.scheduleEvent(
+        time::milliseconds(static_cast<int>(1000.0 * rdist_(rengine_))),
+        [this] { PublishData(); });
   }
 
   Face face_;
@@ -79,7 +81,7 @@ class SimpleNode {
   Node node_;
 
   std::mt19937 rengine_;
-  std::uniform_int_distribution<> rdist_;
+  std::exponential_distribution<> rdist_;
 
   util::Signal<SimpleNode, std::shared_ptr<const Data>, bool> data_event_trace_;
 };

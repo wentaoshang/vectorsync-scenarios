@@ -7,6 +7,7 @@
 
 #include "ns3/application.h"
 #include "ns3/boolean.h"
+#include "ns3/double.h"
 #include "ns3/ndnSIM/helper/ndn-stack-helper.hpp"
 #include "ns3/string.h"
 #include "ns3/trace-source-accessor.h"
@@ -55,11 +56,11 @@ class SimpleNodeApp : public Application {
                           MakeBooleanAccessor(&SimpleNodeApp::lossy_mode_),
                           MakeBooleanChecker())
             .AddAttribute(
-                "MaxDataInterval",
-                "Maximum data publishing interval for the sync node.",
-                UintegerValue(10000),
-                MakeUintegerAccessor(&SimpleNodeApp::max_data_interval_),
-                MakeUintegerChecker<uint32_t>())
+                "DataRate",
+                "Data publishing rate (packets per second) for the sync node.",
+                DoubleValue(1.0),
+                MakeDoubleAccessor(&SimpleNodeApp::data_rate_),
+                MakeDoubleChecker<double>())
             .AddTraceSource(
                 "VectorClock", "Vector clock of the sync node.",
                 MakeTraceSourceAccessor(&SimpleNodeApp::vector_clock_trace_),
@@ -102,7 +103,7 @@ class SimpleNodeApp : public Application {
   std::string routing_prefix_;
   uint32_t seed_;
   bool lossy_mode_;
-  uint32_t max_data_interval_;
+  double data_rate_;
 
   std::string vinfo_proto_;
 

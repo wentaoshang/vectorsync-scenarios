@@ -56,18 +56,18 @@ int main(int argc, char* argv[]) {
                      StringValue("ERROR_UNIT_PACKET"));
 
   int N = 10;
-  double TotalRunTimeSeconds = 600.0;
+  double TotalRunTimeSeconds = 100.0;
   bool Synchronized = false;
   double LossRate = 0.0;
   bool LossyMode = false;
   std::string LinkDelay = "100ms";
   int LeavingNodes = 0;
-  uint32_t MaxDataIntervalMS = 10000;
+  double DataRate = 1.0;
 
   CommandLine cmd;
   cmd.AddValue("NumOfNodes", "Number of sync nodes in the group", N);
   cmd.AddValue("TotalRunTimeSeconds",
-               "Total running time of the simulation in seconds (> 20)",
+               "Total running time of the simulation in seconds",
                TotalRunTimeSeconds);
   cmd.AddValue(
       "Synchronized",
@@ -80,12 +80,9 @@ int main(int argc, char* argv[]) {
   cmd.AddValue("LeavingNodes",
                "Number of nodes randomly leaving the group after 20s",
                LeavingNodes);
-  cmd.AddValue("MaxDataIntervalMS",
-               "Maximum number of data publishing interval in milliseconds",
-               MaxDataIntervalMS);
+  cmd.AddValue("DataRate", "Data publishing rate (packets per second)",
+               DataRate);
   cmd.Parse(argc, argv);
-
-  if (TotalRunTimeSeconds < 20.0) return -1;
 
   NodeContainer nodes;
   nodes.Create(N + 1);
@@ -135,7 +132,7 @@ int main(int argc, char* argv[]) {
     if (LossyMode) helper.SetAttribute("LossyMode", BooleanValue(true));
     if (!Synchronized)
       helper.SetAttribute("RandomSeed", UintegerValue(seed->GetInteger()));
-    helper.SetAttribute("MaxDataInterval", UintegerValue(MaxDataIntervalMS));
+    helper.SetAttribute("DataRate", DoubleValue(DataRate));
     helper.SetAttribute("StartTime", TimeValue(Seconds(1.0)));
     if (i <= LeavingNodes)
       helper.SetAttribute("StopTime",
@@ -170,8 +167,7 @@ int main(int argc, char* argv[]) {
   Simulator::Destroy();
 
   std::string file_name = "results/D" + LinkDelay + "N" + std::to_string(N);
-  if (MaxDataIntervalMS != 10000)
-    file_name += "MDI" + std::to_string(MaxDataIntervalMS);
+  if (DataRate != 1.0) file_name += "DR" + std::to_string(DataRate);
   if (Synchronized) file_name += "Sync";
   if (LossyMode) file_name += "LM";
   if (LossRate > 0.0) file_name += "LR" + std::to_string(LossRate);
