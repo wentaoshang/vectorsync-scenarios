@@ -54,9 +54,12 @@ int main(int argc, char* argv[]) {
   Config::SetDefault("ns3::DropTailQueue::MaxPackets", StringValue("100"));
 
   int N = 10;
-  double TotalRunTimeSeconds = 3600.0;
-  bool Synchronized = false;
-  std::string LinkDelay = "10ms";
+  double TotalRunTimeSeconds = 100.0;
+  bool Synchronized = true;
+  std::string LinkDelay = "100ms";
+
+  ::ndn::vsync::SetInterestLifetime(ndn::time::milliseconds(4000),
+                                    ndn::time::milliseconds(4000));
 
   CommandLine cmd;
   cmd.AddValue("NumOfNodes", "Number of sync nodes in the group (>= 2)", N);

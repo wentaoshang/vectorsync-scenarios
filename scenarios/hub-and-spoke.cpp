@@ -160,18 +160,19 @@ int main(int argc, char* argv[]) {
 
   Simulator::Stop(Seconds(TotalRunTimeSeconds));
 
-  ndn::L3RateTracer::InstallAll("rate-trace.txt",
-                                Seconds(TotalRunTimeSeconds - 0.5));
-
-  Simulator::Run();
-  Simulator::Destroy();
-
   std::string file_name = "results/D" + LinkDelay + "N" + std::to_string(N);
   if (DataRate != 1.0) file_name += "DR" + std::to_string(DataRate);
   if (Synchronized) file_name += "Sync";
   if (LossyMode) file_name += "LM";
   if (LossRate > 0.0) file_name += "LR" + std::to_string(LossRate);
   if (LeavingNodes > 0) file_name += "LN" + std::to_string(LeavingNodes);
+
+  ndn::L3RateTracer::InstallAll(file_name + "-rate-trace.txt",
+                                Seconds(TotalRunTimeSeconds - 0.5));
+
+  Simulator::Run();
+  Simulator::Destroy();
+
   std::fstream fs(file_name, std::ios_base::out | std::ios_base::trunc);
 
   int count = 0;

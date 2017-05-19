@@ -37,11 +37,15 @@ static void DataEvent(std::string nid, std::shared_ptr<const ndn::Data> data,
 }
 
 int main(int argc, char* argv[]) {
-  double TotalRunTimeSeconds = 100.0;
+  double TotalRunTimeSeconds = 60.0;
   double LossRate = 0.0;
   bool Synchronized = false;
   bool LossyMode = false;
   double DataRate = 1.0;
+  int LeavingNodes = 0;
+
+  ::ndn::vsync::SetInterestLifetime(ndn::time::milliseconds(100),
+                                    ndn::time::milliseconds(100));
 
   CommandLine cmd;
   cmd.AddValue("TotalRunTimeSeconds",
@@ -54,6 +58,9 @@ int main(int argc, char* argv[]) {
       "Synchronized",
       "If set, the data publishing events from all nodes are synchronized",
       Synchronized);
+  cmd.AddValue("LeavingNodes",
+               "Number of nodes randomly leaving the group after 10s",
+               LeavingNodes);
   cmd.AddValue("DataRate", "Data publishing rate (packets per second)",
                DataRate);
   cmd.Parse(argc, argv);
@@ -78,6 +85,10 @@ int main(int argc, char* argv[]) {
   seed->SetAttribute("Min", DoubleValue(0.0));
   seed->SetAttribute("Max", DoubleValue(1000.0));
 
+  Ptr<UniformRandomVariable> stop_time = CreateObject<UniformRandomVariable>();
+  stop_time->SetAttribute("Min", DoubleValue(10.0));
+  stop_time->SetAttribute("Max", DoubleValue(TotalRunTimeSeconds));
+
   PointToPointHelper p2p;
   Ptr<RateErrorModel> rem = CreateObject<RateErrorModel>();
   rem->SetAttribute("ErrorRate", DoubleValue(LossRate));
@@ -100,7 +111,11 @@ int main(int argc, char* argv[]) {
     helper.SetAttribute("NodeID", StringValue(nid));
     helper.SetAttribute("ViewInfo", StringValue(vinfo_proto));
     helper.SetAttribute("StartTime", TimeValue(Seconds(1.0)));
-    helper.SetAttribute("StopTime", TimeValue(Seconds(TotalRunTimeSeconds)));
+    if (i <= LeavingNodes)
+      helper.SetAttribute("StopTime",
+                          TimeValue(Seconds(stop_time->GetValue())));
+    else
+      helper.SetAttribute("StopTime", TimeValue(Seconds(TotalRunTimeSeconds)));
     helper.SetAttribute("DataRate", DoubleValue(DataRate));
     if (LossyMode) helper.SetAttribute("LossyMode", BooleanValue(true));
     if (!Synchronized)
@@ -119,17 +134,20 @@ int main(int argc, char* argv[]) {
 
   Simulator::Stop(Seconds(TotalRunTimeSeconds));
 
-  ndn::L3RateTracer::InstallAll("campus-rate-trace.txt",
-                                Seconds(TotalRunTimeSeconds - 0.5));
-
-  Simulator::Run();
-  Simulator::Destroy();
-
   std::string file_name =
       "results/VS-CampusRunTime" + std::to_string(TotalRunTimeSeconds);
   if (Synchronized) file_name += "Sync";
   if (LossRate > 0.0) file_name += "LR" + std::to_string(LossRate);
   if (LossyMode) file_name += "LM";
+  if (DataRate != 1.0) file_name += "DR" + std::to_string(DataRate);
+  if (LeavingNodes > 0) file_name += "LN" + std::to_string(LeavingNodes);
+
+  ndn::L3RateTracer::InstallAll(file_name + "-rate-trace.txt",
+                                Seconds(TotalRunTimeSeconds - 0.5));
+
+  Simulator::Run();
+  Simulator::Destroy();
+
   std::fstream fs(file_name, std::ios_base::out | std::ios_base::trunc);
 
   int count = 0;
