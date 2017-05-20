@@ -24,6 +24,9 @@ std::unordered_map<std::string, std::pair<double, std::vector<double>>> delays;
 static void DataEvent(std::string nid, std::shared_ptr<const ndn::Data> data,
                       bool is_local) {
   auto name = data->getName().toUri();
+  NS_LOG_INFO("new_data_name=" << name << ", node_id=" << nid << ", is_local="
+                               << (is_local ? "true" : "false"));
+
   double now = Simulator::Now().GetSeconds();
 
   auto& entry = delays[name];
@@ -70,7 +73,7 @@ int main(int argc, char* argv[]) {
 
   // Install Ndn stack on all nodes
   ndn::StackHelper ndnHelper;
-  ndnHelper.setCsSize(1000);
+  ndnHelper.setCsSize(5000);
   ndnHelper.InstallAll();
 
   // Installing global routing interface on all nodes
@@ -96,9 +99,9 @@ int main(int argc, char* argv[]) {
       "/NodeList/*/DeviceList/*/$ns3::PointToPointNetDevice/ReceiveErrorModel",
       PointerValue(rem));
 
-  std::vector<std::string> nodes{"leaf-505", "leaf-687", "leaf-741",
-                                 "leaf-580", "leaf-463", "leaf-721",
-                                 "leaf-486", "leaf-675", "leaf-799"};
+  std::vector<std::string> nodes{"leaf-505", "leaf-687", "leaf-741", "leaf-580",
+                                 "leaf-463", "leaf-721", "leaf-486", "leaf-675",
+                                 "leaf-799", "leaf-525"};
 
   std::vector<::ndn::vsync::MemberInfo> mlist;
   for (size_t i = 0; i < nodes.size(); ++i) {
@@ -116,7 +119,7 @@ int main(int argc, char* argv[]) {
     helper.SetAttribute("NodeID", StringValue(nid));
     helper.SetAttribute("ViewInfo", StringValue(vinfo_proto));
     helper.SetAttribute("StartTime", TimeValue(Seconds(1.0)));
-    if (i <= LeavingNodes)
+    if (i < LeavingNodes)
       helper.SetAttribute("StopTime",
                           TimeValue(Seconds(stop_time->GetValue())));
     else
@@ -155,26 +158,38 @@ int main(int argc, char* argv[]) {
 
   std::fstream fs(file_name, std::ios_base::out | std::ios_base::trunc);
 
-  int count = 0;
-  double average_delay = std::accumulate(
-      delays.begin(), delays.end(), 0.0,
-      [&count, &fs](double a, const decltype(delays)::value_type& b) {
-        double gen_time = b.second.first;
-        const auto& vec = b.second.second;
-        count += vec.size();
-        return a + std::accumulate(vec.begin(), vec.end(), 0.0,
-                                   [gen_time, &fs](double c, double d) {
-                                     fs << (d - gen_time) << std::endl;
-                                     return c + d - gen_time;
-                                   });
-      });
-  average_delay /= count;
+  int fully_synchronized_data = 0;
+  double average_delay = 0.0;
+  double max_delay = 0.0;
+  for (auto iter = delays.begin(); iter != delays.end(); ++iter) {
+    double gen_time = iter->second.first;
+    const auto& vec = iter->second.second;
+    if (vec.size() != 9) {
+      std::cout << iter->first << ", generated at " << gen_time
+                << "s, received by " << vec.size() << " nodes" << std::endl;
+      continue;
+    }
+    ++fully_synchronized_data;
+    double max_time = 0.0;
+    fs << gen_time;
+    for (auto iter2 = vec.begin(); iter2 != vec.end(); ++iter2) {
+      if (*iter2 > max_time) max_time = *iter2;
+      fs << '\t' << *iter2;
+    }
+    double d = max_time - gen_time;
+    if (max_delay < d) max_delay = d;
+    average_delay += d;
+  }
+  average_delay /= fully_synchronized_data;
 
   fs.close();
 
   std::cout << "Total number of data published is: " << delays.size()
             << std::endl;
-  std::cout << "Total number of data propagated is: " << count << std::endl;
+  std::cout << "Total number of data fully synchronized is: "
+            << fully_synchronized_data << std::endl;
+  std::cout << "Max data propagation delay is: " << max_delay << " seconds."
+            << std::endl;
   std::cout << "Average data propagation delay is: " << average_delay
             << " seconds." << std::endl;
 
