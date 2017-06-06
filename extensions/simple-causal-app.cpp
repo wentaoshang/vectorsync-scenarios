@@ -13,9 +13,9 @@ NS_OBJECT_ENSURE_REGISTERED(SimpleCOApp);
 void SimpleCOApp::StartApplication() {
   NS_LOG_INFO("NodeID: " << node_id_ << " Seed: " << seed_);
   node_.reset(new ::ndn::vsync::app::SimpleCONode(
-      node_id_, routing_prefix_, ndn::StackHelper::getKeyChain(), seed_));
-  node_->ConnectVectorClockTrace(
-      std::bind(&SimpleCOApp::TraceVectorClock, this, _1, _2));
+      node_id_, ndn::StackHelper::getKeyChain(), seed_));
+  node_->ConnectVectorChangeTrace(
+      std::bind(&SimpleCOApp::TraceVectorChange, this, _1, _2));
   node_->ConnectViewChangeTrace(
       std::bind(&SimpleCOApp::TraceViewChange, this, _1, _2, _3));
   node_->ConnectDataEventTrace(

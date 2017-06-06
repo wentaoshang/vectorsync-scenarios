@@ -13,8 +13,7 @@ NS_OBJECT_ENSURE_REGISTERED(SimpleNodeApp);
 void SimpleNodeApp::StartApplication() {
   NS_LOG_INFO("NodeID: " << node_id_ << " Seed: " << seed_);
   node_.reset(new ::ndn::vsync::app::SimpleNode(
-      node_id_, routing_prefix_, ndn::StackHelper::getKeyChain(), seed_,
-      lossy_mode_, data_rate_));
+      node_id_, ndn::StackHelper::getKeyChain(), seed_, data_rate_));
 
   if (!vinfo_proto_.empty()) {
     ::ndn::vsync::ViewInfo vinfo;
@@ -23,8 +22,8 @@ void SimpleNodeApp::StartApplication() {
     node_->SetViewInfo(vinfo);
   }
 
-  node_->ConnectVectorClockTrace(
-      std::bind(&SimpleNodeApp::TraceVectorClock, this, _1, _2));
+  node_->ConnectVectorChangeTrace(
+      std::bind(&SimpleNodeApp::TraceVectorChange, this, _1, _2));
   node_->ConnectViewChangeTrace(
       std::bind(&SimpleNodeApp::TraceViewChange, this, _1, _2, _3));
   node_->ConnectDataEventTrace(

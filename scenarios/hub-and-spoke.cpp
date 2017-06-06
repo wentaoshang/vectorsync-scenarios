@@ -36,8 +36,8 @@ static void DataEvent(std::string nid, std::shared_ptr<const ndn::Data> data,
     entry.second.push_back(now);
 }
 
-static void VectorClockChange(std::string nid, std::size_t idx,
-                              const ::ndn::vsync::VersionVector& vc) {
+static void VectorChange(std::string nid, std::size_t idx,
+                         const ::ndn::vsync::VersionVector& vc) {
   NS_LOG_INFO("node_id=\"" << nid << "\", node_index=" << idx
                            << ", vector_clock=" << vc);
 }
@@ -59,7 +59,6 @@ int main(int argc, char* argv[]) {
   double TotalRunTimeSeconds = 100.0;
   bool Synchronized = false;
   double LossRate = 0.0;
-  bool LossyMode = false;
   std::string LinkDelay = "100ms";
   int LeavingNodes = 0;
   double DataRate = 1.0;
@@ -74,8 +73,6 @@ int main(int argc, char* argv[]) {
       "If set, the data publishing events from all nodes are synchronized",
       Synchronized);
   cmd.AddValue("LossRate", "Packet loss rate in the network", LossRate);
-  cmd.AddValue("LossyMode", "If set, the sync nodes will enable lossy mode",
-               LossyMode);
   cmd.AddValue("LinkDelay", "Delay of the underlying P2P channel", LinkDelay);
   cmd.AddValue("LeavingNodes",
                "Number of nodes randomly leaving the group after 20s",
@@ -118,7 +115,7 @@ int main(int argc, char* argv[]) {
   std::vector<::ndn::vsync::MemberInfo> mlist;
   for (int i = 1; i <= N; ++i) {
     std::string nid = 'N' + std::to_string(i);
-    mlist.push_back({nid, "/"});
+    mlist.push_back({::ndn::Name('/' + nid)});
   }
   ::ndn::vsync::ViewInfo vinfo(mlist);
   std::string vinfo_proto;
@@ -126,10 +123,9 @@ int main(int argc, char* argv[]) {
 
   for (int i = 1; i <= N; ++i) {
     ndn::AppHelper helper("ns3::ndn::vsync::SimpleNodeApp");
-    std::string nid = 'N' + std::to_string(i);
+    std::string nid = "/N" + std::to_string(i);
     helper.SetAttribute("NodeID", StringValue(nid));
     helper.SetAttribute("ViewInfo", StringValue(vinfo_proto));
-    if (LossyMode) helper.SetAttribute("LossyMode", BooleanValue(true));
     if (!Synchronized)
       helper.SetAttribute("RandomSeed", UintegerValue(seed->GetInteger()));
     helper.SetAttribute("DataRate", DoubleValue(DataRate));
@@ -143,15 +139,14 @@ int main(int argc, char* argv[]) {
 
     ndn::FibHelper::AddRoute(nodes.Get(0), ::ndn::vsync::kSyncPrefix,
                              nodes.Get(i), 1);
-    std::string node_prefix = '/' + nid;
-    ndn::FibHelper::AddRoute(nodes.Get(0), node_prefix, nodes.Get(i), 1);
+    ndn::FibHelper::AddRoute(nodes.Get(0), nid, nodes.Get(i), 1);
 
     ndn::FibHelper::AddRoute(nodes.Get(i), "/", nodes.Get(0), 1);
     ndn::FibHelper::AddRoute(nodes.Get(i), ::ndn::vsync::kSyncPrefix,
                              nodes.Get(0), 1);
 
-    nodes.Get(i)->GetApplication(0)->TraceConnect(
-        "VectorClock", nid, MakeCallback(&VectorClockChange));
+    nodes.Get(i)->GetApplication(0)->TraceConnect("VectorChange", nid,
+                                                  MakeCallback(&VectorChange));
     nodes.Get(i)->GetApplication(0)->TraceConnect("ViewChange", nid,
                                                   MakeCallback(&ViewChange));
     nodes.Get(i)->GetApplication(0)->TraceConnect("DataEvent", nid,
@@ -163,7 +158,6 @@ int main(int argc, char* argv[]) {
   std::string file_name = "results/D" + LinkDelay + "N" + std::to_string(N);
   if (DataRate != 1.0) file_name += "DR" + std::to_string(DataRate);
   if (Synchronized) file_name += "Sync";
-  if (LossyMode) file_name += "LM";
   if (LossRate > 0.0) file_name += "LR" + std::to_string(LossRate);
   if (LeavingNodes > 0) file_name += "LN" + std::to_string(LeavingNodes);
 

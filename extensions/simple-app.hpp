@@ -22,8 +22,8 @@ namespace vsync {
 
 class SimpleNodeApp : public Application {
  public:
-  typedef void (*VectorClockTraceCallback)(std::size_t,
-                                           const ::ndn::vsync::VersionVector&);
+  typedef void (*VectorChangeTraceCallback)(std::size_t,
+                                            const ::ndn::vsync::VersionVector&);
   typedef void (*ViewChangeTraceCallback)(const ::ndn::vsync::ViewID&,
                                           const ::ndn::vsync::ViewInfo&, bool);
   typedef void (*DataEventTraceCallback)(std::shared_ptr<const ndn::Data>,
@@ -38,10 +38,6 @@ class SimpleNodeApp : public Application {
                           StringValue(""),
                           MakeStringAccessor(&SimpleNodeApp::node_id_),
                           MakeStringChecker())
-            .AddAttribute("RoutingPrefix", "Routing prefix for the sync node.",
-                          StringValue("/"),
-                          MakeStringAccessor(&SimpleNodeApp::routing_prefix_),
-                          MakeStringChecker())
             .AddAttribute("ViewInfo", "Serialized protobuf for the ViewInfo.",
                           StringValue(""),
                           MakeStringAccessor(&SimpleNodeApp::vinfo_proto_),
@@ -50,11 +46,6 @@ class SimpleNodeApp : public Application {
                 "RandomSeed", "Seed used for the random number generator.",
                 UintegerValue(0), MakeUintegerAccessor(&SimpleNodeApp::seed_),
                 MakeUintegerChecker<uint32_t>())
-            .AddAttribute("LossyMode",
-                          "Whether VectorSync operates in lossy mode.",
-                          BooleanValue(false),
-                          MakeBooleanAccessor(&SimpleNodeApp::lossy_mode_),
-                          MakeBooleanChecker())
             .AddAttribute(
                 "DataRate",
                 "Data publishing rate (packets per second) for the sync node.",
@@ -62,9 +53,9 @@ class SimpleNodeApp : public Application {
                 MakeDoubleAccessor(&SimpleNodeApp::data_rate_),
                 MakeDoubleChecker<double>())
             .AddTraceSource(
-                "VectorClock", "Vector clock of the sync node.",
-                MakeTraceSourceAccessor(&SimpleNodeApp::vector_clock_trace_),
-                "ns3::ndn::vsync::SimpleNodeApp::VectorClockTraceCallback")
+                "VectorChange", "Vector change event from the sync node.",
+                MakeTraceSourceAccessor(&SimpleNodeApp::vector_change_trace_),
+                "ns3::ndn::vsync::SimpleNodeApp::VectorChangeTraceCallback")
             .AddTraceSource(
                 "ViewChange", "View change event from the sync node.",
                 MakeTraceSourceAccessor(&SimpleNodeApp::view_change_trace_),
@@ -83,9 +74,9 @@ class SimpleNodeApp : public Application {
 
   virtual void StopApplication() { node_.reset(); }
 
-  void TraceVectorClock(std::size_t idx,
-                        const ::ndn::vsync::VersionVector& vc) {
-    vector_clock_trace_(idx, vc);
+  void TraceVectorChange(std::size_t idx,
+                         const ::ndn::vsync::VersionVector& vc) {
+    vector_change_trace_(idx, vc);
   }
 
   void TraceViewChange(const ::ndn::vsync::ViewID& vid,
@@ -100,9 +91,7 @@ class SimpleNodeApp : public Application {
  private:
   std::unique_ptr<::ndn::vsync::app::SimpleNode> node_;
   std::string node_id_;
-  std::string routing_prefix_;
   uint32_t seed_;
-  bool lossy_mode_;
   double data_rate_;
 
   std::string vinfo_proto_;
@@ -111,7 +100,7 @@ class SimpleNodeApp : public Application {
                  bool>
       view_change_trace_;
   TracedCallback<std::size_t, const ::ndn::vsync::VersionVector&>
-      vector_clock_trace_;
+      vector_change_trace_;
   TracedCallback<std::shared_ptr<const ndn::Data>, bool> data_event_trace_;
 };
 

@@ -20,25 +20,25 @@ class SimpleNode {
   using DataEventTraceCb =
       std::function<void(std::shared_ptr<const Data>, bool)>;
 
-  SimpleNode(const NodeID& nid, const Name& prefix, KeyChain& keychain,
-             uint32_t seed, bool lossy_mode, double data_rate)
+  SimpleNode(const Name& nid, KeyChain& keychain, uint32_t seed,
+             double data_rate)
       : scheduler_(face_.getIoService()),
         key_chain_(keychain),
-        node_(face_, scheduler_, key_chain_, nid, prefix, seed),
+        node_(face_, scheduler_, key_chain_, nid, seed),
         rengine_(seed),
         rdist_(data_rate) {
     node_.ConnectDataSignal(std::bind(&SimpleNode::OnData, this, _1));
-    if (lossy_mode) node_.EnableLossyMode();
   }
 
   void SetViewInfo(const ViewInfo& vinfo) {
     if (vinfo.Size() == 0) return;
     auto nid = node_.GetNodeID();
     if (!vinfo.GetIndexByID(nid).second)
-      throw std::invalid_argument("Cannot load ViewInfo at node " + nid);
+      throw std::invalid_argument("Cannot load ViewInfo at node " +
+                                  nid.toUri());
 
     // Use first node as leader
-    NodeID leader = vinfo.GetIDByIndex(0).first;
+    auto leader = vinfo.GetIDByIndex(0).first;
     node_.SetViewInfo({4, leader}, vinfo);
   }
 
@@ -50,8 +50,8 @@ class SimpleNode {
     face_.processEvents();
   }
 
-  void ConnectVectorClockTrace(Node::VectorClockChangeCb cb) {
-    node_.ConnectVectorClockChangeSignal(cb);
+  void ConnectVectorChangeTrace(Node::VectorChangeCb cb) {
+    node_.ConnectVectorChangeSignal(cb);
   }
 
   void ConnectViewChangeTrace(Node::ViewChangeCb cb) {
@@ -68,7 +68,10 @@ class SimpleNode {
   }
 
   void PublishData() {
-    auto data = node_.PublishData("Hello from " + node_.GetNodeID());
+    if (++data_count_ > 100) return;
+    std::string msg =
+        node_.GetNodeID().toUri() + ":" + std::to_string(data_count_);
+    auto data = node_.PublishData(msg);
     data_event_trace_(data, true);
     scheduler_.scheduleEvent(
         time::milliseconds(static_cast<int>(1000.0 * rdist_(rengine_))),
@@ -79,6 +82,7 @@ class SimpleNode {
   Scheduler scheduler_;
   KeyChain& key_chain_;
   Node node_;
+  int data_count_ = 0;
 
   std::mt19937 rengine_;
   std::exponential_distribution<> rdist_;

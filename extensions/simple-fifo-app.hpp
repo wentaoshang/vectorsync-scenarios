@@ -20,8 +20,8 @@ namespace vsync {
 
 class SimpleFIFOApp : public Application {
  public:
-  typedef void (*VectorClockTraceCallback)(std::size_t,
-                                           const ::ndn::vsync::VersionVector&);
+  typedef void (*VectorChangeTraceCallback)(std::size_t,
+                                            const ::ndn::vsync::VersionVector&);
   typedef void (*ViewChangeTraceCallback)(const ::ndn::vsync::ViewID&,
                                           const ::ndn::vsync::ViewInfo&, bool);
   typedef void (*DataEventTraceCallback)(std::shared_ptr<const ndn::Data>,
@@ -36,17 +36,13 @@ class SimpleFIFOApp : public Application {
                           StringValue(""),
                           MakeStringAccessor(&SimpleFIFOApp::node_id_),
                           MakeStringChecker())
-            .AddAttribute("RoutingPrefix", "Routing prefix for the sync node.",
-                          StringValue("/"),
-                          MakeStringAccessor(&SimpleFIFOApp::routing_prefix_),
-                          MakeStringChecker())
             .AddAttribute(
                 "RandomSeed", "Seed used for the random number generator.",
                 UintegerValue(0), MakeUintegerAccessor(&SimpleFIFOApp::seed_),
                 MakeUintegerChecker<uint32_t>())
             .AddTraceSource(
-                "VectorClock", "Vector clock of the sync node.",
-                MakeTraceSourceAccessor(&SimpleFIFOApp::vector_clock_trace_),
+                "VectorChange", "Vector change event from the sync node.",
+                MakeTraceSourceAccessor(&SimpleFIFOApp::vector_change_trace_),
                 "ns3::ndn::vsync::SimpleFIFOApp::VectorClockTraceCallback")
             .AddTraceSource(
                 "ViewChange", "View change event from the sync node.",
@@ -66,9 +62,9 @@ class SimpleFIFOApp : public Application {
 
   virtual void StopApplication() { node_.reset(); }
 
-  void TraceVectorClock(std::size_t idx,
-                        const ::ndn::vsync::VersionVector& vc) {
-    vector_clock_trace_(idx, vc);
+  void TraceVectorChange(std::size_t idx,
+                         const ::ndn::vsync::VersionVector& vc) {
+    vector_change_trace_(idx, vc);
   }
 
   void TraceViewChange(const ::ndn::vsync::ViewID& vid,
@@ -83,14 +79,13 @@ class SimpleFIFOApp : public Application {
  private:
   std::unique_ptr<::ndn::vsync::app::SimpleFIFONode> node_;
   std::string node_id_;
-  std::string routing_prefix_;
   uint32_t seed_;
 
   TracedCallback<const ::ndn::vsync::ViewID&, const ::ndn::vsync::ViewInfo&,
                  bool>
       view_change_trace_;
   TracedCallback<std::size_t, const ::ndn::vsync::VersionVector&>
-      vector_clock_trace_;
+      vector_change_trace_;
   TracedCallback<std::shared_ptr<const ndn::Data>, bool> data_event_trace_;
 };
 

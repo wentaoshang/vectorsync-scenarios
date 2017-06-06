@@ -80,7 +80,7 @@ int main(int argc, char* argv[]) {
   for (int i = 0; i < 2; ++i) {
     ndn::AppHelper helper("ns3::ndn::vsync::SimpleNodeApp");
     helper.SetAttribute(
-        "NodeID", StringValue("N" + std::to_string(nodes.Get(i)->GetId())));
+        "NodeID", StringValue("/N" + std::to_string(nodes.Get(i)->GetId())));
     if (!Synchronized)
       helper.SetAttribute("RandomSeed", UintegerValue(seed->GetInteger()));
     helper.Install(nodes.Get(i)).Start(Seconds(1.0));

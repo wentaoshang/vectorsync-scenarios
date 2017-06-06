@@ -37,25 +37,25 @@ static void DataEvent(std::string nid, std::shared_ptr<const ndn::Data> data,
 }
 
 int main(int argc, char* argv[]) {
-  Config::SetDefault("ns3::DropTailQueue::MaxPackets", StringValue("2000"));
+  Config::SetDefault("ns3::DropTailQueue::MaxPackets", StringValue("100"));
 
-  double TotalRunTimeSeconds = 60.0;
+  double TotalRunTimeSeconds = 120.0;
   double LossRate = 0.0;
   bool Synchronized = false;
-  bool LossyMode = false;
   double DataRate = 1.0;
   int LeavingNodes = 0;
 
   ::ndn::vsync::SetInterestLifetime(ndn::time::milliseconds(500),
                                     ndn::time::milliseconds(500));
 
+  int hb_interval = 10000;
+  ::ndn::vsync::SetHeartbeatInterval(ndn::time::milliseconds(hb_interval));
+
   CommandLine cmd;
   cmd.AddValue("TotalRunTimeSeconds",
                "Total running time of the simulation in seconds",
                TotalRunTimeSeconds);
   cmd.AddValue("LossRate", "Packet loss rate in the network", LossRate);
-  cmd.AddValue("LossyMode", "If set, the sync nodes will enable lossy mode",
-               LossyMode);
   cmd.AddValue(
       "Synchronized",
       "If set, the data publishing events from all nodes are synchronized",
@@ -105,7 +105,7 @@ int main(int argc, char* argv[]) {
 
   std::vector<::ndn::vsync::MemberInfo> mlist;
   for (size_t i = 0; i < nodes.size(); ++i) {
-    mlist.push_back({nodes[i], "/"});
+    mlist.push_back({::ndn::Name('/' + nodes[i])});
   }
   ::ndn::vsync::ViewInfo vinfo(mlist);
   std::string vinfo_proto;
@@ -116,7 +116,7 @@ int main(int argc, char* argv[]) {
     Ptr<Node> node = Names::Find<Node>(nid);
 
     ndn::AppHelper helper("ns3::ndn::vsync::SimpleNodeApp");
-    helper.SetAttribute("NodeID", StringValue(nid));
+    helper.SetAttribute("NodeID", StringValue('/' + nid));
     helper.SetAttribute("ViewInfo", StringValue(vinfo_proto));
     helper.SetAttribute("StartTime", TimeValue(Seconds(1.0)));
     if (i < LeavingNodes)
@@ -125,7 +125,6 @@ int main(int argc, char* argv[]) {
     else
       helper.SetAttribute("StopTime", TimeValue(Seconds(TotalRunTimeSeconds)));
     helper.SetAttribute("DataRate", DoubleValue(DataRate));
-    if (LossyMode) helper.SetAttribute("LossyMode", BooleanValue(true));
     if (!Synchronized)
       helper.SetAttribute("RandomSeed", UintegerValue(seed->GetInteger()));
     helper.Install(node);
@@ -146,12 +145,12 @@ int main(int argc, char* argv[]) {
       "results/VS-LargeRunTime" + std::to_string(TotalRunTimeSeconds);
   if (Synchronized) file_name += "Sync";
   if (LossRate > 0.0) file_name += "LR" + std::to_string(LossRate);
-  if (LossyMode) file_name += "LM";
   if (DataRate != 1.0) file_name += "DR" + std::to_string(DataRate);
   if (LeavingNodes > 0) file_name += "LN" + std::to_string(LeavingNodes);
+  if (hb_interval != 4000) file_name += "HB" + std::to_string(hb_interval);
 
   ndn::L3RateTracer::InstallAll(file_name + "-rate-trace.txt",
-                                Seconds(TotalRunTimeSeconds - 0.5));
+                                Seconds(TotalRunTimeSeconds - 0.1));
 
   Simulator::Run();
   Simulator::Destroy();
@@ -176,6 +175,7 @@ int main(int argc, char* argv[]) {
       if (*iter2 > max_time) max_time = *iter2;
       fs << '\t' << *iter2;
     }
+    fs << std::endl;
     double d = max_time - gen_time;
     if (max_delay < d) max_delay = d;
     average_delay += d;

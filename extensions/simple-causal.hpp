@@ -19,11 +19,10 @@ class SimpleCONode {
   using DataEventTraceCb =
       std::function<void(std::shared_ptr<const Data>, bool)>;
 
-  SimpleCONode(const NodeID& nid, const Name& prefix, KeyChain& keychain,
-               uint32_t seed)
+  SimpleCONode(const Name& nid, KeyChain& keychain, uint32_t seed)
       : scheduler_(face_.getIoService()),
         key_chain_(keychain),
-        node_(face_, scheduler_, key_chain_, nid, prefix, seed),
+        node_(face_, scheduler_, key_chain_, nid, seed),
         rengine_(seed),
         rdist_(500, 10000) {
     node_.ConnectCODataSignal(std::bind(&SimpleCONode::OnData, this, _1));
@@ -37,8 +36,8 @@ class SimpleCONode {
     face_.processEvents();
   }
 
-  void ConnectVectorClockTrace(Node::VectorClockChangeCb cb) {
-    node_.ConnectVectorClockChangeSignal(cb);
+  void ConnectVectorChangeTrace(Node::VectorChangeCb cb) {
+    node_.ConnectVectorChangeSignal(cb);
   }
 
   void ConnectViewChangeTrace(Node::ViewChangeCb cb) {
@@ -55,7 +54,7 @@ class SimpleCONode {
   }
 
   void PublishData() {
-    auto data = node_.PublishCOData("Hello from " + node_.GetNodeID());
+    auto data = node_.PublishCOData("Hello from " + node_.GetNodeID().toUri());
     data_event_trace_(data, true);
     scheduler_.scheduleEvent(time::milliseconds(rdist_(rengine_)),
                              [this] { PublishData(); });
