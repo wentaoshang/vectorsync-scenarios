@@ -24,9 +24,10 @@ std::unordered_map<std::string, std::pair<double, std::vector<double>>> delays;
 static void DataEvent(std::string nid, std::shared_ptr<const ndn::Data> data,
                       bool is_local) {
   auto name = data->getName().toUri();
+  /*
   NS_LOG_INFO("new_data_name=" << name << ", node_id=" << nid << ", is_local="
                                << (is_local ? "true" : "false"));
-
+  */
   double now = Simulator::Now().GetSeconds();
 
   auto& entry = delays[name];
@@ -35,13 +36,13 @@ static void DataEvent(std::string nid, std::shared_ptr<const ndn::Data> data,
   else
     entry.second.push_back(now);
 }
-
+/*
 static void VectorClockChange(std::string nid, std::size_t idx,
                               const ::ndn::vsync::VersionVector& vc) {
   NS_LOG_INFO("node_id=\"" << nid << "\", node_index=" << idx
                            << ", vector_clock=" << vc);
 }
-
+*/
 static void ViewChange(std::string nid, const ::ndn::vsync::ViewID& vid,
                        const ::ndn::vsync::ViewInfo& vinfo, bool is_leader) {
   NS_LOG_INFO("node_id=\"" << nid << "\", is_leader=" << (is_leader ? 'Y' : 'N')
@@ -55,11 +56,9 @@ int main(int argc, char* argv[]) {
 
   int N = 10;
   double TotalRunTimeSeconds = 100.0;
-  bool Synchronized = true;
-  std::string LinkDelay = "100ms";
-
-  ::ndn::vsync::SetInterestLifetime(ndn::time::milliseconds(4000),
-                                    ndn::time::milliseconds(4000));
+  bool Synchronized = false;
+  int LinkDelayMS = 10;
+  double DataRate = 1.0;
 
   CommandLine cmd;
   cmd.AddValue("NumOfNodes", "Number of sync nodes in the group (>= 2)", N);
@@ -70,20 +69,31 @@ int main(int argc, char* argv[]) {
       "Synchronized",
       "If set, the data publishing events from all nodes are synchronized",
       Synchronized);
-  cmd.AddValue("LinkDelay", "Delay of the underlying P2P channel", LinkDelay);
+  cmd.AddValue("LinkDelayMS", "Delay of the underlying P2P channel in ms",
+               LinkDelayMS);
+  cmd.AddValue("DataRate", "Data publishing rate (packets per second)",
+               DataRate);
   cmd.Parse(argc, argv);
+
+  ::ndn::vsync::SetInterestLifetime(ndn::time::milliseconds(20 * LinkDelayMS),
+                                    ndn::time::milliseconds(20 * LinkDelayMS));
+
+  ::ndn::vsync::SetHeartbeatInterval(
+      ndn::time::milliseconds(static_cast<int>(1000.0 / DataRate)));
 
   if (N < 2) return -1;
 
   NodeContainer nodes;
   nodes.Create(N);
 
-  Config::SetDefault("ns3::PointToPointChannel::Delay", StringValue(LinkDelay));
+  Config::SetDefault("ns3::PointToPointChannel::Delay",
+                     TimeValue(MilliSeconds(LinkDelayMS)));
 
   PointToPointHelper p2p;
   for (int i = 0; i < N - 1; ++i) p2p.Install(nodes.Get(i), nodes.Get(i + 1));
 
   ndn::StackHelper ndnHelper;
+  ndnHelper.setCsSize(1000);
   ndnHelper.InstallAll();
 
   ndn::StrategyChoiceHelper::InstallAll(::ndn::vsync::kSyncPrefix,
@@ -98,15 +108,15 @@ int main(int argc, char* argv[]) {
 
   for (int i = 0; i < N; ++i) {
     ndn::AppHelper helper("ns3::ndn::vsync::SimpleNodeApp");
-    std::string nid = 'N' + std::to_string(i);
+    std::string nid = "/N" + std::to_string(i);
     helper.SetAttribute("NodeID", StringValue(nid));
     if (!Synchronized)
       helper.SetAttribute("RandomSeed", UintegerValue(seed->GetInteger()));
     helper.Install(nodes.Get(i)).Start(Seconds(1.0));
-    ndnGlobalRoutingHelper.AddOrigins('/' + nid, nodes.Get(i));
+    ndnGlobalRoutingHelper.AddOrigins(nid, nodes.Get(i));
 
-    nodes.Get(i)->GetApplication(0)->TraceConnect(
-        "VectorClock", nid, MakeCallback(&VectorClockChange));
+    // nodes.Get(i)->GetApplication(0)->TraceConnect(
+    //     "VectorClock", nid, MakeCallback(&VectorClockChange));
     nodes.Get(i)->GetApplication(0)->TraceConnect("ViewChange", nid,
                                                   MakeCallback(&ViewChange));
     nodes.Get(i)->GetApplication(0)->TraceConnect("DataEvent", nid,
@@ -133,28 +143,50 @@ int main(int argc, char* argv[]) {
   Simulator::Run();
   Simulator::Destroy();
 
-  std::string file_name = "results/LineD" + LinkDelay + "N" + std::to_string(N);
+  std::string file_name =
+      "results/LineD" + std::to_string(LinkDelayMS) + "N" + std::to_string(N);
   if (Synchronized) file_name += "Sync";
-  std::fstream fs(file_name, std::ios_base::out | std::ios_base::trunc);
 
-  int count = 0;
-  double average_delay = std::accumulate(
-      delays.begin(), delays.end(), 0.0,
-      [&count, &fs](double a, const decltype(delays)::value_type& b) {
-        double gen_time = b.second.first;
-        const auto& vec = b.second.second;
-        count += vec.size();
-        return a + std::accumulate(vec.begin(), vec.end(), 0.0,
-                                   [gen_time, &fs](double c, double d) {
-                                     fs << (d - gen_time) << std::endl;
-                                     return c + d - gen_time;
-                                   });
-      });
-  average_delay /= count;
+  std::fstream fs_sync_delay(file_name + "-sync-delay",
+                             std::ios_base::out | std::ios_base::trunc);
+  std::fstream fs_prop_delay(file_name + "-prop-delay",
+                             std::ios_base::out | std::ios_base::trunc);
 
-  fs.close();
+  int fully_synchronized_data = 0;
+  double average_delay = 0.0;
+  double max_delay = 0.0;
+  for (auto iter = delays.begin(); iter != delays.end(); ++iter) {
+    double gen_time = iter->second.first;
+    const auto& vec = iter->second.second;
+    if (vec.size() != N - 1) {
+      std::cout << "gen_time: " << gen_time << ", group_size: " << N
+                << ", vec.size: " << vec.size() << std::endl;
+      continue;
+    }
+    ++fully_synchronized_data;
+    double max_time = 0.0;
+    for (auto iter2 = vec.begin(); iter2 != vec.end(); ++iter2) {
+      if (*iter2 > max_time) max_time = *iter2;
+      fs_prop_delay << gen_time << '\t' << *iter2 << std::endl;
+    }
 
-  std::cout << "Total number of data propagated is: " << count << std::endl;
+    fs_sync_delay << gen_time << '\t' << max_time << std::endl;
+
+    double d = max_time - gen_time;
+    if (max_delay < d) max_delay = d;
+    average_delay += d;
+  }
+  average_delay /= fully_synchronized_data;
+
+  fs_sync_delay.close();
+  fs_prop_delay.close();
+
+  std::cout << "Total number of data published is: " << delays.size()
+            << std::endl;
+  std::cout << "Total number of data fully synchronized is: "
+            << fully_synchronized_data << std::endl;
+  std::cout << "Max data propagation delay is: " << max_delay << " seconds."
+            << std::endl;
   std::cout << "Average data propagation delay is: " << average_delay
             << " seconds." << std::endl;
 

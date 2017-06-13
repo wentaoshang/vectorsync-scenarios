@@ -37,9 +37,8 @@ class SimpleNode {
       throw std::invalid_argument("Cannot load ViewInfo at node " +
                                   nid.toUri());
 
-    // Use first node as leader
-    auto leader = vinfo.GetIDByIndex(0).first;
-    node_.SetViewInfo({4, leader}, vinfo);
+    auto leader = vinfo.GetIDByIndex(vinfo.Size() - 1).first;
+    node_.SetViewInfo({1, leader}, vinfo);
   }
 
   void Start() {
