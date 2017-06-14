@@ -44,10 +44,23 @@ static void VectorChange(std::string nid, std::size_t idx,
                            << ", vector_clock=" << vc);
 }
 */
+
+std::map<::ndn::vsync::ViewID, std::pair<double, std::vector<double>>,
+         ::ndn::vsync::VIDCompare>
+    view_change_delays;
+
 static void ViewChange(std::string nid, const ::ndn::vsync::ViewID& vid,
                        const ::ndn::vsync::ViewInfo& vinfo, bool is_leader) {
   NS_LOG_INFO("node_id=\"" << nid << "\", is_leader=" << (is_leader ? 'Y' : 'N')
                            << ", view_id=" << vid << ", view_info=" << vinfo);
+
+  double now = Simulator::Now().GetSeconds();
+
+  auto& entry = view_change_delays[vid];
+  if (is_leader)
+    entry.first = now;
+  else
+    entry.second.push_back(now);
 }
 
 static void NodeStop(std::string nid) {
@@ -242,6 +255,24 @@ int main(int argc, char* argv[]) {
   std::cout << "Max data propagation delay is: " << max_delay << " seconds."
             << std::endl;
   std::cout << "Average data propagation delay is: " << average_delay
+            << " seconds." << std::endl;
+
+  double max_view_change_delay = 0.0;
+  for (auto iter = view_change_delays.begin(); iter != view_change_delays.end();
+       ++iter) {
+    const auto& vid = iter->first;
+    double start = iter->second.first;
+    const auto& vec = iter->second.second;
+    for (auto iter2 = vec.begin(); iter2 != vec.end(); ++iter2) {
+      /*
+      std::cout << "ViewID: " << vid << ", start: " << start
+                << ", join: " << *iter2 << std::endl;
+      */
+      double d = *iter2 - start;
+      if (d > max_view_change_delay) max_view_change_delay = d;
+    }
+  }
+  std::cout << "Max view change delay is: " << max_view_change_delay
             << " seconds." << std::endl;
 
   return 0;
