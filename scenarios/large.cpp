@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <fstream>
 #include <iostream>
+#include <map>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -24,9 +25,10 @@ std::unordered_map<std::string, std::pair<double, std::vector<double>>> delays;
 static void DataEvent(std::string nid, std::shared_ptr<const ndn::Data> data,
                       bool is_local) {
   auto name = data->getName().toUri();
+  /*
   NS_LOG_INFO("new_data_name=" << name << ", node_id=" << nid << ", is_local="
                                << (is_local ? "true" : "false"));
-
+  */
   double now = Simulator::Now().GetSeconds();
 
   auto& entry = delays[name];
@@ -34,6 +36,16 @@ static void DataEvent(std::string nid, std::shared_ptr<const ndn::Data> data,
     entry.first = now;
   else
     entry.second.push_back(now);
+}
+
+static void ViewChange(std::string nid, const ::ndn::vsync::ViewID& vid,
+                       const ::ndn::vsync::ViewInfo& vinfo, bool is_leader) {
+  NS_LOG_INFO("node_id=\"" << nid << "\", is_leader=" << (is_leader ? 'Y' : 'N')
+                           << ", view_id=" << vid << ", view_info=" << vinfo);
+}
+
+static void NodeStop(std::string nid) {
+  NS_LOG_INFO("node /" << nid << " stops");
 }
 
 int main(int argc, char* argv[]) {
@@ -47,9 +59,6 @@ int main(int argc, char* argv[]) {
 
   ::ndn::vsync::SetInterestLifetime(ndn::time::milliseconds(500),
                                     ndn::time::milliseconds(500));
-
-  int hb_interval = 10000;
-  ::ndn::vsync::SetHeartbeatInterval(ndn::time::milliseconds(hb_interval));
 
   CommandLine cmd;
   cmd.AddValue("TotalRunTimeSeconds",
@@ -66,6 +75,9 @@ int main(int argc, char* argv[]) {
   cmd.AddValue("DataRate", "Data publishing rate (packets per second)",
                DataRate);
   cmd.Parse(argc, argv);
+
+  ::ndn::vsync::SetHeartbeatInterval(
+      ndn::time::milliseconds(static_cast<int>(1000.0 / DataRate)));
 
   AnnotatedTopologyReader topologyReader("", 25);
   topologyReader.SetFileName("topologies/6461.r0-conv-annotated.txt");
@@ -111,6 +123,8 @@ int main(int argc, char* argv[]) {
   std::string vinfo_proto;
   vinfo.Encode(vinfo_proto);
 
+  std::map<double, int> group_size;
+
   for (size_t i = 0; i < nodes.size(); ++i) {
     const std::string& nid = nodes[i];
     Ptr<Node> node = Names::Find<Node>(nid);
@@ -119,11 +133,15 @@ int main(int argc, char* argv[]) {
     helper.SetAttribute("NodeID", StringValue('/' + nid));
     helper.SetAttribute("ViewInfo", StringValue(vinfo_proto));
     helper.SetAttribute("StartTime", TimeValue(Seconds(1.0)));
-    if (i < LeavingNodes)
-      helper.SetAttribute("StopTime",
-                          TimeValue(Seconds(stop_time->GetValue())));
-    else
+    if (i < LeavingNodes) {
+      double st = stop_time->GetValue();
+      group_size[st] = 10;
+      std::cout << "node /" << nid << " leaves at " << st << std::endl;
+      Simulator::Schedule(Seconds(st), NodeStop, nid);
+      helper.SetAttribute("StopTime", TimeValue(Seconds(st)));
+    } else {
       helper.SetAttribute("StopTime", TimeValue(Seconds(TotalRunTimeSeconds)));
+    }
     helper.SetAttribute("DataRate", DoubleValue(DataRate));
     if (!Synchronized)
       helper.SetAttribute("RandomSeed", UintegerValue(seed->GetInteger()));
@@ -134,12 +152,20 @@ int main(int argc, char* argv[]) {
 
     node->GetApplication(0)->TraceConnect("DataEvent", nid,
                                           MakeCallback(&DataEvent));
-    // node->GetDevice(0)->SetAttribute("ReceiveErrorModel", PointerValue(rem));
+
+    node->GetApplication(0)->TraceConnect("ViewChange", nid,
+                                          MakeCallback(&ViewChange));
   }
 
   ndn::GlobalRoutingHelper::CalculateRoutes();
 
   Simulator::Stop(Seconds(TotalRunTimeSeconds));
+  group_size[TotalRunTimeSeconds] = 10;
+  int gk = 10;
+  for (auto iter = group_size.begin(); iter != group_size.end(); ++iter) {
+    iter->second = gk;
+    --gk;
+  }
 
   std::string file_name =
       "results/VS-LargeRunTime" + std::to_string(TotalRunTimeSeconds);
@@ -147,7 +173,6 @@ int main(int argc, char* argv[]) {
   if (LossRate > 0.0) file_name += "LR" + std::to_string(LossRate);
   if (DataRate != 1.0) file_name += "DR" + std::to_string(DataRate);
   if (LeavingNodes > 0) file_name += "LN" + std::to_string(LeavingNodes);
-  if (hb_interval != 4000) file_name += "HB" + std::to_string(hb_interval);
 
   ndn::L3RateTracer::InstallAll(file_name + "-rate-trace.txt",
                                 Seconds(TotalRunTimeSeconds - 0.1));
@@ -161,21 +186,31 @@ int main(int argc, char* argv[]) {
   double average_delay = 0.0;
   double max_delay = 0.0;
   for (auto iter = delays.begin(); iter != delays.end(); ++iter) {
+    const auto& s = iter->first;
     double gen_time = iter->second.first;
     const auto& vec = iter->second.second;
-    if (vec.size() != 9) {
-      std::cout << iter->first << ", generated at " << gen_time
-                << "s, received by " << vec.size() << " nodes" << std::endl;
+    int gs = group_size.upper_bound(gen_time)->second;
+    if (vec.size() != gs - 1 || vec.size() == 0) {
+      std::cout << "name: " << s << ", gen_time: " << gen_time
+                << ", group_size: " << gs << ", vec.size: " << vec.size()
+                << std::endl;
       continue;
     }
     ++fully_synchronized_data;
     double max_time = 0.0;
-    fs << gen_time;
+    for (auto iter2 = vec.begin(); iter2 != vec.end(); ++iter2) {
+      if (*iter2 > max_time) max_time = *iter2;
+    }
+
+    // Output: gen_time at the 1st column; max_time at the 2nd column; then
+    // followed by individual data receiving time
+    fs << gen_time << '\t' << max_time;
     for (auto iter2 = vec.begin(); iter2 != vec.end(); ++iter2) {
       if (*iter2 > max_time) max_time = *iter2;
       fs << '\t' << *iter2;
     }
     fs << std::endl;
+
     double d = max_time - gen_time;
     if (max_delay < d) max_delay = d;
     average_delay += d;

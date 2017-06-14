@@ -207,12 +207,14 @@ int main(int argc, char* argv[]) {
   double average_delay = 0.0;
   double max_delay = 0.0;
   for (auto iter = delays.begin(); iter != delays.end(); ++iter) {
+    const auto& s = iter->first;
     double gen_time = iter->second.first;
     const auto& vec = iter->second.second;
     int gs = group_size.upper_bound(gen_time)->second;
     if (vec.size() != gs - 1 || vec.size() == 0) {
-      std::cout << "gen_time: " << gen_time << ", group_size: " << gs
-                << ", vec.size: " << vec.size() << std::endl;
+      std::cout << "name: " << s << ", gen_time: " << gen_time
+                << ", group_size: " << gs << ", vec.size: " << vec.size()
+                << std::endl;
       continue;
     }
     ++fully_synchronized_data;
